@@ -80,14 +80,20 @@ export default function UpdatePage() {
   }
 
   return (
-    <div className="p-8">
-      <h1 className="text-3xl font-bold mb-6">
-        Update Configuration: {siteData.site.domain}
-      </h1>
+    <div className="p-8 max-w-7xl mx-auto">
+      <div className="mb-6">
+        <Link href={`/sites/${siteId}`} className="text-blue-600 hover:text-blue-700 text-sm mb-4 inline-block">
+          ← Back to Site
+        </Link>
+        <h1 className="text-3xl font-bold text-gray-900 mb-2">
+          Update Configuration
+        </h1>
+        <p className="text-gray-600">{siteData.site.domain}</p>
+      </div>
 
-      <div className="grid grid-cols-2 gap-8">
-        <div>
-          <h2 className="text-xl font-semibold mb-4">New Configuration</h2>
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
+          <h2 className="text-xl font-semibold mb-4 text-gray-900">New Configuration</h2>
           <ConfigEditor
             initialConfig={siteData.config || {}}
             onSubmit={handleSubmit}
@@ -95,12 +101,18 @@ export default function UpdatePage() {
           />
         </div>
 
-        <div>
-          <h2 className="text-xl font-semibold mb-4">Preview Changes</h2>
+        <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
+          <h2 className="text-xl font-semibold mb-4 text-gray-900">Preview Changes</h2>
           {previewChanges ? (
             <DiffView changes={[]} />
           ) : (
-            <p className="text-gray-500">Make changes to see preview</p>
+            <div className="text-center py-12 border-2 border-dashed border-gray-300 rounded-lg bg-gray-50">
+              <svg className="mx-auto h-12 w-12 text-gray-400 mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+              </svg>
+              <p className="text-gray-500">Make changes to see preview</p>
+            </div>
           )}
         </div>
       </div>

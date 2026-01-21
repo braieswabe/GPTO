@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@gpto/database';
 import { sites, configVersions, telemetryEvents } from '@gpto/database/src/schema';
-import { eq, and } from 'drizzle-orm';
+import { eq, and, desc } from 'drizzle-orm';
 import { extractToken, verifyToken } from '@gpto/api';
 import { AuthenticationError, NotFoundError } from '@gpto/api/src/errors';
 
@@ -46,7 +46,7 @@ export async function GET(
       .select()
       .from(telemetryEvents)
       .where(eq(telemetryEvents.siteId, siteId))
-      .orderBy(telemetryEvents.timestamp)
+      .orderBy(desc(telemetryEvents.timestamp))
       .limit(100);
 
     return NextResponse.json({

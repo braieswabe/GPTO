@@ -95,13 +95,125 @@ class PantheraBlackBox {
   private applyConfig(): void {
     if (!this.config) return;
 
-    // Example: Inject JSON-LD schema if configured
-    // This is safe - we're only manipulating DOM, not executing code
     const config = this.config.panthera_blackbox;
     
-    // Apply any declarative updates here
-    // For example: update meta tags, inject structured data, etc.
-    // All operations must be safe and declarative
+    // Inject JSON-LD schema if configured
+    this.injectSchema(config);
+    
+    // Initialize AutoFill if enabled
+    if (config.autofill?.enabled && config.autofill.forms) {
+      this.initializeAutoFill(config);
+    }
+    
+    // Initialize ad slots if configured
+    if (config.ads?.slots) {
+      this.initializeAdSlots(config);
+    }
+  }
+
+  /**
+   * Inject JSON-LD schema
+   */
+  private injectSchema(config: BlackBoxConfig['panthera_blackbox']): void {
+    if (typeof document === 'undefined') return;
+    
+    // Remove existing Panthera schema if present
+    const existing = document.querySelector('script[type="application/ld+json"][data-panthera]');
+    if (existing) {
+      existing.remove();
+    }
+    
+    // Create new schema script
+    const script = document.createElement('script');
+    script.type = 'application/ld+json';
+    script.setAttribute('data-panthera', 'true');
+    
+    // Basic schema structure (would be enhanced with actual config data)
+    const schema = {
+      '@context': 'https://schema.org',
+      '@type': 'Organization',
+      name: config.site.brand,
+      url: `https://${config.site.domain}`,
+    };
+    
+    script.textContent = JSON.stringify(schema);
+    document.head.appendChild(script);
+  }
+
+  /**
+   * Initialize AutoFill for forms
+   */
+  private initializeAutoFill(config: BlackBoxConfig['panthera_blackbox']): void {
+    if (typeof window === 'undefined' || !config.autofill?.forms) return;
+    
+    config.autofill.forms.forEach((form) => {
+      const formElement = document.querySelector(form.selector);
+      if (formElement) {
+        // Store form config for later use
+        (formElement as HTMLElement & { pantheraAutoFill?: typeof form }).pantheraAutoFill = form;
+        
+        // Listen for first field focus to trigger AutoFill
+        formElement.addEventListener('focusin', (e) => {
+          const target = e.target as HTMLElement;
+          if (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.tagName === 'SELECT') {
+            this.triggerAutoFill(form);
+          }
+        }, { once: true });
+      }
+    });
+  }
+
+  /**
+   * Trigger AutoFill for a form
+   */
+  private async triggerAutoFill(form: { selector: string; map: Record<string, string> }): Promise<void> {
+    // In production, this would fetch CFP data from API
+    // For now, use placeholder data
+    const autofillData: Record<string, string> = {};
+    
+    // Apply AutoFill to form fields
+    const formElement = document.querySelector(form.selector);
+    if (!formElement) return;
+    
+    for (const [fieldName, selector] of Object.entries(form.map)) {
+      const field = formElement.querySelector(selector) as HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement;
+      if (field && autofillData[fieldName]) {
+        field.value = autofillData[fieldName];
+        field.dispatchEvent(new Event('input', { bubbles: true }));
+      }
+    }
+  }
+
+  /**
+   * Initialize ad slots
+   */
+  private initializeAdSlots(config: BlackBoxConfig['panthera_blackbox']): void {
+    if (typeof window === 'undefined' || !config.ads?.slots) return;
+    
+    config.ads.slots.forEach((slot) => {
+      const slotElement = document.querySelector(`[data-ad-slot="${slot.id}"]`);
+      if (slotElement) {
+        // Store slot config
+        (slotElement as HTMLElement & { pantheraAdSlot?: typeof slot }).pantheraAdSlot = slot;
+        
+        // In production, this would load ad creative and track impressions
+        this.loadAdCreative(slot);
+      }
+    });
+  }
+
+  /**
+   * Load ad creative for a slot
+   */
+  private async loadAdCreative(slot: { id: string; contexts: string[] }): Promise<void> {
+    // In production, this would:
+    // 1. Fetch creative from API based on slot contexts
+    // 2. Calculate CPM
+    // 3. Render ad
+    // 4. Track impression
+    
+    // Placeholder: just log the slot
+    console.debug('[Panthera Black Box] Ad slot initialized:', slot.id);
   }
 
   /**
