@@ -1,9 +1,9 @@
 {
-  "projectId": "${NEON_PROJECT_ID}",
+  "projectId": "your-neon-project-id",
   "branch": "main",
-  "region": "us-east-2",
+  "region": "us-east-1",
   "connectionPooling": {
     "enabled": true,
-    "poolerHost": "${NEON_POOLER_HOST}"
+    "poolerHost": "ep-orange-dust-ahpmexg3-pooler.c-3.us-east-1.aws.neon.tech"
   }
 }

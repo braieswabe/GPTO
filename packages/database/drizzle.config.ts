@@ -5,6 +5,13 @@ export default {
   out: './migrations',
   driver: 'pg',
   dbCredentials: {
-    connectionString: process.env.NEON_DATABASE_URL || '',
+    // Use non-pooled connection for migrations
+    connectionString:
+      process.env.DATABASE_URL_UNPOOLED ||
+      process.env.POSTGRES_URL_NON_POOLING ||
+      process.env.DATABASE_URL ||
+      process.env.POSTGRES_URL ||
+      process.env.NEON_DATABASE_URL ||
+      '',
   },
 } satisfies Config;

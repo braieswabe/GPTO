@@ -44,3 +44,10 @@ Thumbs.db
 # Temporary files
 tmp/
 temp/
+
+# pnpm
+pnpm-lock.yaml
+.pnpm-store/
+
+# Neon
+.neon/
