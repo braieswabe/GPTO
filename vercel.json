@@ -4,7 +4,6 @@
   "installCommand": "pnpm install",
   "framework": null,
   "outputDirectory": "apps/dashboard/.next",
-  "ignoreCommand": "git rev-parse --verify HEAD~1 >/dev/null 2>&1 && git diff --quiet HEAD HEAD~1 . || exit 1",
   "rewrites": [
     {
       "source": "/api/:path*",
