@@ -1,9 +1,9 @@
 {
-  "buildCommand": "pnpm build",
-  "devCommand": "pnpm dev",
+  "buildCommand": "cd apps/dashboard && pnpm build",
+  "devCommand": "cd apps/dashboard && pnpm dev",
   "installCommand": "pnpm install",
   "framework": null,
-  "outputDirectory": "apps/dashboard/.next",
+  "outputDirectory": ".next",
   "rewrites": [
     {
       "source": "/api/:path*",
