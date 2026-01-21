@@ -1,8 +1,9 @@
 {
-  "buildCommand": "cd apps/dashboard && pnpm build",
-  "devCommand": "cd apps/dashboard && pnpm dev",
+  "buildCommand": "pnpm --filter dashboard build",
+  "devCommand": "pnpm --filter dashboard dev",
   "installCommand": "pnpm install",
   "framework": null,
+  "rootDirectory": "apps/dashboard",
   "outputDirectory": ".next",
   "rewrites": [
     {
