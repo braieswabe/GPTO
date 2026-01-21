@@ -22,7 +22,7 @@ export async function POST(
   try {
     // Authentication
     const authHeader = request.headers.get('authorization');
-    const token = extractToken(authHeader);
+    const token = extractToken(authHeader ?? undefined);
     
     if (!token) {
       throw new AuthenticationError();
@@ -142,7 +142,7 @@ export async function GET(
   try {
     // Authentication
     const authHeader = request.headers.get('authorization');
-    const token = extractToken(authHeader);
+    const token = extractToken(authHeader ?? undefined);
     
     if (!token) {
       throw new AuthenticationError();

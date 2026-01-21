@@ -44,6 +44,30 @@ importers:
       '@gpto/schemas':
         specifier: workspace:*
         version: link:../../packages/schemas
+      '@gpto/servos-agcc':
+        specifier: workspace:*
+        version: link:../../packages/servos/agcc
+      '@gpto/servos-candidate-first':
+        specifier: workspace:*
+        version: link:../../packages/servos/candidate-first
+      '@gpto/servos-chatbot':
+        specifier: workspace:*
+        version: link:../../packages/servos/chatbot
+      '@gpto/servos-email':
+        specifier: workspace:*
+        version: link:../../packages/servos/email
+      '@gpto/servos-gpto':
+        specifier: workspace:*
+        version: link:../../packages/servos/gpto
+      '@gpto/servos-mibi':
+        specifier: workspace:*
+        version: link:../../packages/servos/mibi
+      '@gpto/servos-paid':
+        specifier: workspace:*
+        version: link:../../packages/servos/paid
+      '@gpto/servos-social':
+        specifier: workspace:*
+        version: link:../../packages/servos/social
       '@gpto/shared':
         specifier: workspace:*
         version: link:../../packages/shared
@@ -201,6 +225,131 @@ importers:
       '@types/node':
         specifier: ^20.10.0
         version: 20.19.30
+      typescript:
+        specifier: ^5.3.3
+        version: 5.9.3
+
+  packages/servos/agcc:
+    dependencies:
+      '@gpto/api':
+        specifier: workspace:*
+        version: link:../../api
+      '@gpto/schemas':
+        specifier: workspace:*
+        version: link:../../schemas
+      '@gpto/shared':
+        specifier: workspace:*
+        version: link:../../shared
+    devDependencies:
+      typescript:
+        specifier: ^5.3.3
+        version: 5.9.3
+
+  packages/servos/candidate-first:
+    dependencies:
+      '@gpto/api':
+        specifier: workspace:*
+        version: link:../../api
+      '@gpto/schemas':
+        specifier: workspace:*
+        version: link:../../schemas
+      '@gpto/shared':
+        specifier: workspace:*
+        version: link:../../shared
+    devDependencies:
+      typescript:
+        specifier: ^5.3.3
+        version: 5.9.3
+
+  packages/servos/chatbot:
+    dependencies:
+      '@gpto/api':
+        specifier: workspace:*
+        version: link:../../api
+      '@gpto/schemas':
+        specifier: workspace:*
+        version: link:../../schemas
+      '@gpto/shared':
+        specifier: workspace:*
+        version: link:../../shared
+    devDependencies:
+      typescript:
+        specifier: ^5.3.3
+        version: 5.9.3
+
+  packages/servos/email:
+    dependencies:
+      '@gpto/api-lattice':
+        specifier: workspace:*
+        version: link:../../api-lattice
+      '@gpto/servos-agcc':
+        specifier: workspace:*
+        version: link:../agcc
+      '@gpto/shared':
+        specifier: workspace:*
+        version: link:../../shared
+    devDependencies:
+      typescript:
+        specifier: ^5.3.3
+        version: 5.9.3
+
+  packages/servos/gpto:
+    dependencies:
+      '@gpto/api':
+        specifier: workspace:*
+        version: link:../../api
+      '@gpto/database':
+        specifier: workspace:*
+        version: link:../../database
+      '@gpto/schemas':
+        specifier: workspace:*
+        version: link:../../schemas
+      '@gpto/shared':
+        specifier: workspace:*
+        version: link:../../shared
+    devDependencies:
+      typescript:
+        specifier: ^5.3.3
+        version: 5.9.3
+
+  packages/servos/mibi:
+    dependencies:
+      '@gpto/database':
+        specifier: workspace:*
+        version: link:../../database
+      '@gpto/schemas':
+        specifier: workspace:*
+        version: link:../../schemas
+      '@gpto/shared':
+        specifier: workspace:*
+        version: link:../../shared
+    devDependencies:
+      typescript:
+        specifier: ^5.3.3
+        version: 5.9.3
+
+  packages/servos/paid:
+    dependencies:
+      '@gpto/api-lattice':
+        specifier: workspace:*
+        version: link:../../api-lattice
+      '@gpto/shared':
+        specifier: workspace:*
+        version: link:../../shared
+    devDependencies:
+      typescript:
+        specifier: ^5.3.3
+        version: 5.9.3
+
+  packages/servos/social:
+    dependencies:
+      '@gpto/servos-agcc':
+        specifier: workspace:*
+        version: link:../agcc
+      '@gpto/shared':
+        specifier: workspace:*
+        version: link:../../shared
+    devDependencies:
       typescript:
         specifier: ^5.3.3
         version: 5.9.3

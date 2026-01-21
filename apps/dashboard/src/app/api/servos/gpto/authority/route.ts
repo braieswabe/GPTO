@@ -17,7 +17,7 @@ export async function POST(request: NextRequest) {
   try {
     // Authentication
     const authHeader = request.headers.get('authorization');
-    const token = extractToken(authHeader);
+    const token = extractToken(authHeader ?? undefined);
     
     if (!token) {
       throw new AuthenticationError();

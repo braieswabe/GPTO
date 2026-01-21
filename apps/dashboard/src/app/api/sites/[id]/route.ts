@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@gpto/database';
 import { sites, configVersions, telemetryEvents } from '@gpto/database/src/schema';
-import { eq } from 'drizzle-orm';
+import { eq, and } from 'drizzle-orm';
 import { extractToken, verifyToken } from '@gpto/api';
 import { AuthenticationError, NotFoundError } from '@gpto/api/src/errors';
 
@@ -17,7 +17,7 @@ export async function GET(
   try {
     // Authentication
     const authHeader = request.headers.get('authorization');
-    const token = extractToken(authHeader);
+    const token = extractToken(authHeader ?? undefined);
     
     if (!token) {
       throw new AuthenticationError();
@@ -38,8 +38,7 @@ export async function GET(
     const [activeConfig] = await db
       .select()
       .from(configVersions)
-      .where(eq(configVersions.siteId, siteId))
-      .where(eq(configVersions.isActive, true))
+      .where(and(eq(configVersions.siteId, siteId), eq(configVersions.isActive, true)))
       .limit(1);
 
     // Get recent telemetry (last 100 events)

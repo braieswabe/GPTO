@@ -5,7 +5,8 @@
   "description": "GPTO Suite - JSON Black Box runtime system for safe, declarative website updates",
   "workspaces": [
     "apps/*",
-    "packages/*"
+    "packages/*",
+    "packages/**"
   ],
   "scripts": {
     "build": "pnpm -r build",
