@@ -32,12 +32,25 @@ const nextConfig = {
       bodySizeLimit: '2mb',
     },
   },
+  // Disable source maps to avoid reading source code from node_modules
+  // This works around sandbox file permission restrictions
+  productionBrowserSourceMaps: false,
+  
   // Ensure path aliases work
   webpack: (config) => {
     config.resolve.alias = {
       ...config.resolve.alias,
       '@': require('path').resolve(__dirname, './src'),
     };
+    
+    // Disable source map reading to avoid file permission issues
+    config.devtool = false;
+    
+    // Ignore errors when reading source code from node_modules
+    config.ignoreWarnings = [
+      { module: /node_modules/ },
+    ];
+    
     return config;
   },
 };

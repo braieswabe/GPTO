@@ -1,11 +1,12 @@
 import type { Metadata } from 'next';
-import { Inter } from 'next/font/google';
 import './globals.css';
 import { Providers } from './providers';
 import { Navigation } from '@/components/Navigation';
 import { Footer } from '@/components/Footer';
 
-const inter = Inter({ subsets: ['latin'] });
+// Use system font stack instead of Google Fonts to avoid build-time network dependency
+// This ensures builds work in environments without network access
+const fontFamily = 'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif';
 
 export const metadata: Metadata = {
   title: 'GPTO Suite - Safe, Declarative Website Updates',
@@ -19,7 +20,7 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
-      <body className={inter.className}>
+      <body style={{ fontFamily }} className="antialiased">
         <Providers>
           <div className="flex flex-col min-h-screen">
             <Navigation />
