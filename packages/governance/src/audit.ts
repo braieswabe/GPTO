@@ -1,6 +1,6 @@
 import { db } from '@gpto/database';
 import { auditLog } from '@gpto/database/src/schema';
-import { eq, gte, desc } from 'drizzle-orm';
+import { eq, gte, lte, and, desc } from 'drizzle-orm';
 
 /**
  * Audit logging system
@@ -43,27 +43,37 @@ export async function getAuditLog(
     limit?: number;
   }
 ) {
-  let query = db.select().from(auditLog);
+  const conditions = [];
 
   if (filters?.userId) {
-    query = query.where(eq(auditLog.userId, filters.userId)) as typeof query;
+    conditions.push(eq(auditLog.userId, filters.userId));
   }
 
   if (filters?.resourceType) {
-    query = query.where(eq(auditLog.resourceType, filters.resourceType)) as typeof query;
+    conditions.push(eq(auditLog.resourceType, filters.resourceType));
+  }
+
+  if (filters?.resourceId) {
+    conditions.push(eq(auditLog.resourceId, filters.resourceId));
   }
 
   if (filters?.since) {
-    query = query.where(gte(auditLog.createdAt, filters.since)) as typeof query;
+    conditions.push(gte(auditLog.createdAt, filters.since));
   }
 
-  query = query.orderBy(desc(auditLog.createdAt)) as typeof query;
+  let query: any = db.select().from(auditLog);
+
+  if (conditions.length > 0) {
+    query = query.where(and(...conditions));
+  }
+
+  query = query.orderBy(desc(auditLog.createdAt));
 
   if (filters?.limit) {
-    query = query.limit(filters.limit) as typeof query;
+    return await query.limit(filters.limit);
   }
 
-  return query;
+  return await query;
 }
 
 /**
@@ -77,8 +87,10 @@ export async function exportAuditLog(
   const entries = await db
     .select()
     .from(auditLog)
-    .where(gte(auditLog.createdAt, startDate))
-    .where(eq(auditLog.createdAt, endDate))
+    .where(and(
+      gte(auditLog.createdAt, startDate),
+      lte(auditLog.createdAt, endDate)
+    ))
     .orderBy(auditLog.createdAt);
 
   if (format === 'csv') {
