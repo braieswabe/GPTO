@@ -1,5 +1,5 @@
 {
-  "buildCommand": "cd apps/dashboard && pnpm build",
+  "buildCommand": "cd apps/dashboard && pnpm install && pnpm build",
   "devCommand": "pnpm --filter dashboard dev",
   "installCommand": "pnpm install",
   "framework": null,
