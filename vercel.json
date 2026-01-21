@@ -3,8 +3,7 @@
   "devCommand": "pnpm --filter dashboard dev",
   "installCommand": "pnpm install",
   "framework": null,
-  "rootDirectory": "apps/dashboard",
-  "outputDirectory": ".next",
+  "outputDirectory": "apps/dashboard/.next",
   "rewrites": [
     {
       "source": "/api/:path*",
