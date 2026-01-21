@@ -8,40 +8,57 @@ import * as schema from './schema';
  * - DATABASE_URL (Neon pooled connection - recommended)
  * - POSTGRES_URL (Vercel Postgres format)
  * - NEON_DATABASE_URL (Neon-specific)
+ * 
+ * Uses lazy initialization to avoid errors on import when env vars aren't set
  */
-const connectionString =
-  process.env.DATABASE_URL ||
-  process.env.POSTGRES_URL ||
-  process.env.NEON_DATABASE_URL ||
-  '';
 
-if (!connectionString) {
-  throw new Error(
-    'DATABASE_URL, POSTGRES_URL, or NEON_DATABASE_URL environment variable is required'
-  );
+let client: postgres.Sql | null = null;
+let dbInstance: ReturnType<typeof drizzle> | null = null;
+
+function getConnectionString(): string {
+  const connectionString =
+    process.env.DATABASE_URL ||
+    process.env.POSTGRES_URL ||
+    process.env.NEON_DATABASE_URL ||
+    '';
+
+  if (!connectionString) {
+    throw new Error(
+      'DATABASE_URL, POSTGRES_URL, or NEON_DATABASE_URL environment variable is required'
+    );
+  }
+
+  return connectionString;
 }
 
-// Determine if we should use pooled or non-pooled connection
-// Use non-pooled for migrations, pooled for regular queries
-const usePooled =
-  process.env.DATABASE_URL?.includes('-pooler') ||
-  process.env.POSTGRES_URL?.includes('-pooler') ||
-  process.env.NEON_DATABASE_URL?.includes('-pooler') ||
-  !process.env.DATABASE_URL_UNPOOLED;
+function getClient(): postgres.Sql {
+  if (!client) {
+    const connectionString = getConnectionString();
+    
+    // Create postgres client with connection pooling settings
+    client = postgres(connectionString, {
+      max: 10, // Maximum number of connections
+      idle_timeout: 20, // Close idle connections after 20 seconds
+      connect_timeout: 10, // Connection timeout in seconds
+      ssl: 'require', // Always require SSL for Neon
+    });
+  }
 
-// For migrations, prefer non-pooled connection
-const finalConnectionString =
-  process.env.DATABASE_URL_UNPOOLED || process.env.POSTGRES_URL_NON_POOLING || connectionString;
+  return client;
+}
 
-// Create postgres client with connection pooling settings
-const client = postgres(finalConnectionString, {
-  max: 10, // Maximum number of connections
-  idle_timeout: 20, // Close idle connections after 20 seconds
-  connect_timeout: 10, // Connection timeout in seconds
-  ssl: 'require', // Always require SSL for Neon
-});
+function getDb() {
+  if (!dbInstance) {
+    dbInstance = drizzle(getClient(), { schema });
+  }
+  return dbInstance;
+}
 
-// Create Drizzle database instance
-export const db = drizzle(client, { schema });
+// Export lazy-initialized database instance
+export const db = new Proxy({} as ReturnType<typeof drizzle>, {
+  get(_target, prop) {
+    return getDb()[prop as keyof ReturnType<typeof drizzle>];
+  },
+}) as ReturnType<typeof drizzle>;
 
 export type Database = typeof db;

@@ -1,4 +1,9 @@
 import type { Config } from 'drizzle-kit';
+import * as dotenv from 'dotenv';
+import * as path from 'path';
+
+// Load environment variables from .env file
+dotenv.config({ path: path.resolve(process.cwd(), '../../.env') });
 
 export default {
   schema: './src/schema.ts',

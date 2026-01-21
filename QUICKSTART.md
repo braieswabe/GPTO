@@ -51,7 +51,36 @@ pnpm install
 
 (Or use `npx pnpm install` if pnpm isn't installed globally)
 
-## Step 2: Start Development Server
+## Step 2: Set Up Environment Variables
+
+Create a `.env` file in the root directory:
+
+```bash
+# Copy the template (if you have ENV_SETUP.md)
+# Or create manually:
+
+DATABASE_URL=postgresql://neondb_owner:npg_RCD46jZEesyg@ep-orange-dust-ahpmexg3-pooler.c-3.us-east-1.aws.neon.tech/neondb?sslmode=require
+DATABASE_URL_UNPOOLED=postgresql://neondb_owner:npg_RCD46jZEesyg@ep-orange-dust-ahpmexg3.c-3.us-east-1.aws.neon.tech/neondb?sslmode=require
+
+# Generate JWT secret
+./scripts/generate-jwt-secret.sh
+# Then add the output to .env:
+JWT_SECRET=your-generated-secret-here
+```
+
+See `ENV_SETUP.md` for complete environment variable documentation.
+
+## Step 3: Run Database Migrations (Optional)
+
+If you want to set up the database:
+
+```bash
+pnpm db:migrate
+```
+
+**Note:** Make sure your `.env` file has `DATABASE_URL_UNPOOLED` set before running migrations.
+
+## Step 4: Start Development Server
 
 ```bash
 pnpm dev
@@ -109,12 +138,18 @@ pnpm build
 2. Restart your terminal after installation
 3. Or use `npx pnpm` instead of `pnpm`
 
+### Database migration errors?
+
+1. Make sure `.env` file exists with `DATABASE_URL_UNPOOLED` set
+2. Check the connection string is correct
+3. Verify SSL mode is set: `?sslmode=require`
+
 ## Next Steps
 
 - Read `BUILD_INSTRUCTIONS.md` for detailed setup
 - Check `DEPLOYMENT.md` for production deployment
 - See `IMPLEMENTATION_SUMMARY.md` for feature overview
-- See `INSTALL_PNPM.md` for pnpm installation help
+- See `ENV_SETUP.md` for environment variables
 
 ## Features Available
 
