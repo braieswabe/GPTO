@@ -1,0 +1,20 @@
+{
+  "name": "@gpto/governance",
+  "version": "1.0.0",
+  "private": true,
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "scripts": {
+    "build": "tsc",
+    "type-check": "tsc --noEmit",
+    "lint": "eslint src"
+  },
+  "dependencies": {
+    "@gpto/database": "workspace:*",
+    "@gpto/schemas": "workspace:*",
+    "@gpto/shared": "workspace:*"
+  },
+  "devDependencies": {
+    "typescript": "^5.3.3"
+  }
+}

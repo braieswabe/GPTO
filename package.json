@@ -1,0 +1,31 @@
+{
+  "name": "gpto-suite",
+  "version": "1.0.0",
+  "private": true,
+  "description": "GPTO Suite - JSON Black Box runtime system for safe, declarative website updates",
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "build": "pnpm -r build",
+    "dev": "pnpm --filter dashboard dev",
+    "lint": "pnpm -r lint",
+    "type-check": "pnpm -r type-check",
+    "test": "pnpm -r test",
+    "db:migrate": "pnpm --filter database migrate",
+    "db:generate": "pnpm --filter database generate",
+    "install-pnpm": "curl -fsSL https://get.pnpm.io/install.sh | sh"
+  },
+  "devDependencies": {
+    "@types/node": "^20.10.0",
+    "typescript": "^5.3.3",
+    "prettier": "^3.1.1",
+    "eslint": "^8.56.0"
+  },
+  "engines": {
+    "node": ">=18.0.0",
+    "pnpm": ">=8.0.0"
+  },
+  "packageManager": "pnpm@8.15.0"
+}

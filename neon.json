@@ -1,0 +1,9 @@
+{
+  "projectId": "${NEON_PROJECT_ID}",
+  "branch": "main",
+  "region": "us-east-2",
+  "connectionPooling": {
+    "enabled": true,
+    "poolerHost": "${NEON_POOLER_HOST}"
+  }
+}
