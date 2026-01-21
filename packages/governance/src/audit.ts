@@ -57,7 +57,7 @@ export async function getAuditLog(
     query = query.where(gte(auditLog.createdAt, filters.since)) as typeof query;
   }
 
-  query = query.orderBy(desc(auditLog.createdAt));
+  query = query.orderBy(desc(auditLog.createdAt)) as typeof query;
 
   if (filters?.limit) {
     query = query.limit(filters.limit) as typeof query;

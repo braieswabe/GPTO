@@ -20,7 +20,7 @@ export async function POST(request: NextRequest) {
       throw new AuthenticationError();
     }
 
-    const payload = verifyToken(token);
+    verifyToken(token); // Verify token is valid
 
     const body = await request.json();
     const { siteId, config, version } = body;

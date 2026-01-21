@@ -1,7 +1,7 @@
 'use client';
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { useParams, useRouter } from 'next/navigation';
+import { useParams } from 'next/navigation';
 import Link from 'next/link';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import { UpdateHistory } from '@/components/UpdateHistory';
@@ -50,7 +50,6 @@ async function rollbackSite(siteId: string, targetVersion: string) {
 
 export default function SiteDetailPage() {
   const params = useParams();
-  const router = useRouter();
   const queryClient = useQueryClient();
   const siteId = params.id as string;
 
@@ -65,12 +64,6 @@ export default function SiteDetailPage() {
       queryClient.invalidateQueries({ queryKey: ['site', siteId] });
     },
   });
-
-  const handleRollback = async (targetVersion: string) => {
-    if (confirm(`Rollback to version ${targetVersion}?`)) {
-      await rollbackMutation.mutateAsync(targetVersion);
-    }
-  };
 
   if (isLoading) {
     return (

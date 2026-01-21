@@ -4,8 +4,8 @@ import { sites, configVersions, updateHistory } from '@gpto/database/src/schema'
 import { eq, and } from 'drizzle-orm';
 import { extractToken, verifyToken } from '@gpto/api';
 import { AuthenticationError, NotFoundError, ValidationError } from '@gpto/api/src/errors';
-import { signUpdate, verifySignature } from '@gpto/api/src/updates/signature';
-import { incrementVersion, compareVersions } from '@gpto/api/src/updates/versioning';
+import { signUpdate } from '@gpto/api/src/updates/signature';
+import { incrementVersion } from '@gpto/api/src/updates/versioning';
 import { calculateDiff } from '@gpto/api/src/updates/diff';
 import { validator } from '@gpto/schemas';
 import { siteConfigSchema } from '@gpto/schemas/src/site-config';
@@ -87,8 +87,6 @@ export async function POST(
         toVersion,
         diff: { changes },
         signature,
-        signedBy: payload.userId,
-        signedAt: new Date(),
         userId: payload.userId,
       })
       .returning();

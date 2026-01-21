@@ -19,7 +19,7 @@ export async function GET(request: NextRequest) {
       throw new AuthenticationError();
     }
 
-    const payload = verifyToken(token);
+    verifyToken(token); // Verify token is valid
 
     // Query sites
     const sitesList = await db.select().from(sites);

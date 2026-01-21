@@ -2,7 +2,6 @@ import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@gpto/database';
 import { telemetryEvents } from '@gpto/database/src/schema';
 import { telemetryEventSchema, validator } from '@gpto/schemas';
-import { eq } from 'drizzle-orm';
 
 /**
  * POST /api/telemetry/events
@@ -21,7 +20,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Rate limiting (simple in-memory for now, use Upstash Redis in production)
-    const clientIp = request.headers.get('x-forwarded-for') || request.ip || 'unknown';
+    // const clientIp = request.headers.get('x-forwarded-for') || request.ip || 'unknown';
     // TODO: Implement proper rate limiting with Upstash Redis
 
     // Parse and validate request body

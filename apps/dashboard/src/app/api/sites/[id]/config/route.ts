@@ -2,8 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@gpto/database';
 import { sites, configVersions } from '@gpto/database/src/schema';
 import { eq, and } from 'drizzle-orm';
-import { extractToken, verifyToken } from '@gpto/api';
-import { AuthenticationError, NotFoundError } from '@gpto/api/src/errors';
+import { NotFoundError } from '@gpto/api/src/errors';
 
 /**
  * GET /api/sites/[id]/config

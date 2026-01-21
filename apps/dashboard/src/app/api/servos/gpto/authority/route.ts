@@ -44,15 +44,16 @@ export async function POST(request: NextRequest) {
     }
 
     switch (action) {
-      case 'calculate_score':
+      case 'calculate_score': {
         const score = calculateAuthorityScore(grove.node.id, grove);
         return NextResponse.json({
           success: true,
           score,
           nodeId: grove.node.id,
         });
+      }
 
-      case 'generate_backlinks':
+      case 'generate_backlinks': {
         if (!targetSites || !Array.isArray(targetSites)) {
           return NextResponse.json(
             { error: 'targetSites array is required' },
@@ -64,13 +65,15 @@ export async function POST(request: NextRequest) {
           success: true,
           backlinks,
         });
+      }
 
-      case 'generate_schema':
+      case 'generate_schema': {
         const schema = generateAuthoritySchema(grove);
         return NextResponse.json({
           success: true,
           schema,
         });
+      }
 
       default:
         return NextResponse.json(
