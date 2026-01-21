@@ -29,9 +29,47 @@ NEON_DATABASE_URL=${DATABASE_URL}
 
 ```bash
 # Generate a secure random string (min 32 characters)
+# See below for how to generate this
 JWT_SECRET=your-secret-key-change-in-production-min-32-chars
 JWT_EXPIRES_IN=7d
 ```
+
+#### How to Generate JWT_SECRET
+
+**Option 1: Using OpenSSL (Recommended)**
+```bash
+openssl rand -base64 32
+```
+This generates a 32-byte random string encoded in base64 (44 characters).
+
+**Option 2: Using Node.js**
+```bash
+node -e "console.log(require('crypto').randomBytes(32).toString('base64'))"
+```
+
+**Option 3: Using Python**
+```bash
+python3 -c "import secrets; print(secrets.token_urlsafe(32))"
+```
+
+**Option 4: Online Generator**
+- Visit: https://generate-secret.vercel.app/32
+- Or: https://www.random.org/strings/
+
+**Option 5: Using pwgen (if installed)**
+```bash
+pwgen -s 32 1
+```
+
+**Example output:**
+```
+JWT_SECRET=K8mN2pQ5rT7vW9xY1zA3bC5dE7fG9hJ1kL3mN5pQ7rT9vW1xY3zA5bC7dE9fG
+```
+
+⚠️ **Important:** 
+- Use a different secret for each environment (dev/staging/production)
+- Never commit secrets to git
+- Store production secrets securely (use Vercel environment variables)
 
 ## Optional Environment Variables
 

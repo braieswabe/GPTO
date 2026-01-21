@@ -131,6 +131,9 @@ importers:
 
   packages/database:
     dependencies:
+      dotenv:
+        specifier: ^16.4.5
+        version: 16.6.1
       drizzle-orm:
         specifier: ^0.29.0
         version: 0.29.5(postgres@3.4.8)
@@ -2424,6 +2427,11 @@ packages:
     dependencies:
       '@babel/runtime': 7.28.6
       csstype: 3.2.3
+    dev: false
+
+  /dotenv@16.6.1:
+    resolution: {integrity: sha512-uBq4egWHTcTt33a72vpSG0z3HnPuIl6NqYcTrKEg2azoEyl2hpW0zqlxysq2pK9HlDIHyHyakeYaYnSAwd8bow==}
+    engines: {node: '>=12'}
     dev: false
 
   /dreamopt@0.8.0:
