@@ -52,11 +52,19 @@ export async function processApproval(
 
   // If approved, activate the config version
   if (status === 'approved') {
+    // #region agent log
+    fetch('http://127.0.0.1:7251/ingest/f2bef142-91a5-4d7a-be78-4c2383eb5638',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'governance/approval.ts:54',message:'Approval processing started',data:{approvalId,status,approverId},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'B'})}).catch(()=>{});
+    // #endregion
+    
     const [approval] = await db
       .select()
       .from(approvals)
       .where(eq(approvals.id, approvalId))
       .limit(1);
+
+    // #region agent log
+    fetch('http://127.0.0.1:7251/ingest/f2bef142-91a5-4d7a-be78-4c2383eb5638',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'governance/approval.ts:61',message:'Approval record fetched',data:{hasApproval:!!approval,approvalId:approval?.id,updateId:approval?.updateId},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'B'})}).catch(()=>{});
+    // #endregion
 
     if (approval) {
       const [update] = await db
@@ -65,9 +73,13 @@ export async function processApproval(
         .where(eq(updateHistory.id, approval.updateId))
         .limit(1);
 
+      // #region agent log
+      fetch('http://127.0.0.1:7251/ingest/f2bef142-91a5-4d7a-be78-4c2383eb5638',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'governance/approval.ts:68',message:'Update record fetched',data:{hasUpdate:!!update,siteId:update?.siteId,toVersion:update?.toVersion},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'B'})}).catch(()=>{});
+      // #endregion
+
       if (update) {
         // Deactivate current active version
-        await db
+        const deactivateResult = await db
           .update(configVersions)
           .set({ isActive: false })
           .where(and(
@@ -75,8 +87,12 @@ export async function processApproval(
             eq(configVersions.isActive, true)
           ));
 
+        // #region agent log
+        fetch('http://127.0.0.1:7251/ingest/f2bef142-91a5-4d7a-be78-4c2383eb5638',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'governance/approval.ts:75',message:'Deactivated old config version',data:{siteId:update.siteId},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'B'})}).catch(()=>{});
+        // #endregion
+
         // Activate new version
-        await db
+        const activateResult = await db
           .update(configVersions)
           .set({ isActive: true })
           .where(and(
@@ -84,11 +100,19 @@ export async function processApproval(
             eq(configVersions.version, update.toVersion)
           ));
 
+        // #region agent log
+        fetch('http://127.0.0.1:7251/ingest/f2bef142-91a5-4d7a-be78-4c2383eb5638',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'governance/approval.ts:85',message:'Activated new config version',data:{siteId:update.siteId,version:update.toVersion},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'B'})}).catch(()=>{});
+        // #endregion
+
         // Mark update as applied
         await db
           .update(updateHistory)
           .set({ appliedAt: new Date() })
           .where(eq(updateHistory.id, update.id));
+
+        // #region agent log
+        fetch('http://127.0.0.1:7251/ingest/f2bef142-91a5-4d7a-be78-4c2383eb5638',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'governance/approval.ts:93',message:'Approval process completed',data:{siteId:update.siteId,version:update.toVersion},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'B'})}).catch(()=>{});
+        // #endregion
       }
     }
   }

@@ -1,8 +1,9 @@
 'use client';
 
 import { ExportButton } from '@/components/ExportButton';
+import { ProtectedRoute } from '@/components/ProtectedRoute';
 
-export default function SettingsPage() {
+function SettingsPageContent() {
   return (
     <div className="bg-white min-h-screen">
       <div className="p-8 max-w-4xl mx-auto">
@@ -61,5 +62,13 @@ export default function SettingsPage() {
       </div>
       </div>
     </div>
+  );
+}
+
+export default function SettingsPage() {
+  return (
+    <ProtectedRoute>
+      <SettingsPageContent />
+    </ProtectedRoute>
   );
 }

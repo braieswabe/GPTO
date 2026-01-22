@@ -1,11 +1,13 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import Link from 'next/link';
 import { ConfigEditor } from '@/components/ConfigEditor';
 import { DiffView } from '@/components/DiffView';
+import { ProtectedRoute } from '@/components/ProtectedRoute';
+import { PantheraConfigAssistant } from '@/components/PantheraConfigAssistant';
 
 interface SiteDetail {
   site: {
@@ -38,22 +40,33 @@ async function proposeUpdate(siteId: string, newConfig: unknown, changeType: str
   });
   if (!response.ok) {
     const error = await response.json();
-    throw new Error(error.error || 'Failed to propose update');
+    const errorMessage = error.details 
+      ? `${error.error}\n\nDetails:\n${Array.isArray(error.details) ? error.details.join('\n') : JSON.stringify(error.details, null, 2)}`
+      : error.error || 'Failed to propose update';
+    throw new Error(errorMessage);
   }
   return response.json();
 }
 
-export default function UpdatePage() {
+function UpdatePageContent() {
   const params = useParams();
   const router = useRouter();
   const queryClient = useQueryClient();
   const siteId = params.id as string;
   const [previewChanges, setPreviewChanges] = useState<unknown>(null);
+  const [currentConfig, setCurrentConfig] = useState<unknown>(null);
 
   const { data: siteData, isLoading } = useQuery({
     queryKey: ['site', siteId],
     queryFn: () => fetchSiteDetail(siteId),
   });
+
+  // Update currentConfig when siteData loads
+  useEffect(() => {
+    if (siteData?.config) {
+      setCurrentConfig(siteData.config);
+    }
+  }, [siteData]);
 
   const proposeMutation = useMutation({
     mutationFn: ({ newConfig, changeType }: { newConfig: unknown; changeType: string }) =>
@@ -113,29 +126,24 @@ export default function UpdatePage() {
         <p className="text-gray-600">{siteData.site.domain}</p>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-        <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <div className="lg:col-span-2 bg-white p-6 rounded-lg shadow-sm border border-gray-200">
           <h2 className="text-xl font-semibold mb-4 text-gray-900">New Configuration</h2>
           <ConfigEditor
             initialConfig={siteData.config || {}}
             onSubmit={handleSubmit}
             onCancel={() => router.back()}
+            externalConfig={currentConfig}
           />
         </div>
 
-        <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
-          <h2 className="text-xl font-semibold mb-4 text-gray-900">Preview Changes</h2>
-          {previewChanges ? (
-            <DiffView changes={[]} />
-          ) : (
-            <div className="text-center py-12 border-2 border-dashed border-gray-300 rounded-lg bg-gray-50">
-              <svg className="mx-auto h-12 w-12 text-gray-400 mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-              </svg>
-              <p className="text-gray-500">Make changes to see preview</p>
-            </div>
-          )}
+        <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden" style={{ minHeight: '600px' }}>
+          <PantheraConfigAssistant
+            currentConfig={currentConfig || siteData.config || {}}
+            onConfigRevised={(revisedConfig) => {
+              setCurrentConfig(revisedConfig);
+            }}
+          />
         </div>
       </div>
 
@@ -150,5 +158,13 @@ export default function UpdatePage() {
       )}
       </div>
     </div>
+  );
+}
+
+export default function UpdatePage() {
+  return (
+    <ProtectedRoute>
+      <UpdatePageContent />
+    </ProtectedRoute>
   );
 }

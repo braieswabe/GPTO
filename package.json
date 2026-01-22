@@ -16,6 +16,7 @@
     "test": "pnpm -r test",
     "db:migrate": "pnpm --filter database migrate",
     "db:generate": "pnpm --filter database generate",
+    "db:seed": "pnpm --filter database seed",
     "install-pnpm": "curl -fsSL https://get.pnpm.io/install.sh | sh"
   },
   "devDependencies": {

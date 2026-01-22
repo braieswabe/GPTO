@@ -1,3 +1,15 @@
+const path = require('path');
+
+// Load environment variables from root .env file
+// Next.js only loads .env from the directory where next.config.js is located
+// So we manually load from the root directory
+try {
+  require('dotenv').config({ path: path.resolve(__dirname, '../../.env') });
+} catch (e) {
+  // dotenv might not be available, but Next.js will handle env loading
+  console.warn('Could not load .env from root, ensure DATABASE_URL is set in apps/dashboard/.env.local');
+}
+
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,

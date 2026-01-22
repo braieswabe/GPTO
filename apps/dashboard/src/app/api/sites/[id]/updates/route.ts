@@ -1,14 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@gpto/database';
-import { sites, configVersions, updateHistory } from '@gpto/database/src/schema';
-import { eq, and } from 'drizzle-orm';
-import { extractToken, verifyToken } from '@gpto/api';
+import { sites, configVersions, updateHistory, approvals } from '@gpto/database/src/schema';
+import { eq, and, desc } from 'drizzle-orm';
+import { extractToken, verifyToken, migrateConfig } from '@gpto/api';
 import { AuthenticationError, NotFoundError, ValidationError } from '@gpto/api/src/errors';
 import { signUpdate } from '@gpto/api/src/updates/signature';
 import { incrementVersion } from '@gpto/api/src/updates/versioning';
 import { calculateDiff } from '@gpto/api/src/updates/diff';
 import { validator } from '@gpto/schemas';
 import { siteConfigSchema } from '@gpto/schemas/src/site-config';
+import { createApproval } from '@gpto/governance';
 
 /**
  * POST /api/sites/[id]/updates
@@ -54,12 +55,36 @@ export async function POST(
 
     // Parse request body
     const body = await request.json();
-    const { newConfig, changeType = 'patch' } = body;
+    let { newConfig, changeType = 'patch' } = body;
+
+    // Migrate config if it's in old format (for backward compatibility)
+    newConfig = migrateConfig(newConfig);
 
     // Validate new config
+    // #region agent log
+    fetch('http://127.0.0.1:7251/ingest/f2bef142-91a5-4d7a-be78-4c2383eb5638',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'api/sites/[id]/updates/route.ts:59',message:'Starting config validation',data:{siteId,hasNewConfig:!!newConfig,newConfigKeys:newConfig?Object.keys(newConfig):[]},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A'})}).catch(()=>{});
+    // #endregion
+    
     const isValid = validator.validate(siteConfigSchema, newConfig);
+    
+    // #region agent log
+    fetch('http://127.0.0.1:7251/ingest/f2bef142-91a5-4d7a-be78-4c2383eb5638',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'api/sites/[id]/updates/route.ts:62',message:'Validation result',data:{isValid,errorsCount:validator.getErrors().length},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'B'})}).catch(()=>{});
+    // #endregion
+    
     if (!isValid) {
       const errors = validator.getErrors();
+      
+      // #region agent log
+      fetch('http://127.0.0.1:7251/ingest/f2bef142-91a5-4d7a-be78-4c2383eb5638',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'api/sites/[id]/updates/route.ts:66',message:'Validation failed - errors captured',data:{errors,errorsLength:errors.length,errorsString:JSON.stringify(errors)},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'C'})}).catch(()=>{});
+      // #endregion
+      
+      console.error('Config validation failed:', errors);
+      console.error('Config received:', JSON.stringify(newConfig, null, 2));
+      
+      // Also log the raw AJV errors for debugging
+      const rawErrors = (validator as any).lastErrors || (validator as any).ajv?.errors;
+      console.error('Raw AJV errors:', JSON.stringify(rawErrors, null, 2));
+      
       throw new ValidationError('Invalid configuration', errors);
     }
 
@@ -100,6 +125,9 @@ export async function POST(
       createdBy: payload.userId,
     });
 
+    // Create approval request
+    const approvalId = await createApproval(update.id);
+
     return NextResponse.json({
       success: true,
       update: {
@@ -109,15 +137,19 @@ export async function POST(
         changes,
         signature,
         status: 'pending',
+        approvalId,
       },
     });
   } catch (error) {
-    if (
-      error instanceof AuthenticationError ||
-      error instanceof NotFoundError ||
-      error instanceof ValidationError
-    ) {
+    if (error instanceof AuthenticationError || error instanceof NotFoundError) {
       return NextResponse.json({ error: error.message }, { status: error.statusCode });
+    }
+    
+    if (error instanceof ValidationError) {
+      return NextResponse.json({ 
+        error: error.message,
+        details: error.errors 
+      }, { status: error.statusCode });
     }
     
     console.error('Error creating update:', error);
@@ -149,17 +181,50 @@ export async function GET(
     verifyToken(token);
     const siteId = params.id;
 
-    // Get update history
+    // Get update history with approval status
     const updates = await db
-      .select()
+      .select({
+        id: updateHistory.id,
+        siteId: updateHistory.siteId,
+        fromVersion: updateHistory.fromVersion,
+        toVersion: updateHistory.toVersion,
+        diff: updateHistory.diff,
+        signature: updateHistory.signature,
+        appliedAt: updateHistory.appliedAt,
+        rolledBackAt: updateHistory.rolledBackAt,
+        userId: updateHistory.userId,
+        createdAt: updateHistory.createdAt,
+      })
       .from(updateHistory)
       .where(eq(updateHistory.siteId, siteId))
-      .orderBy(updateHistory.createdAt)
+      .orderBy(desc(updateHistory.createdAt))
       .limit(50);
 
+    // Get approval status for each update
+    const updatesWithApprovals = await Promise.all(
+      updates.map(async (update) => {
+        const [approval] = await db
+          .select()
+          .from(approvals)
+          .where(eq(approvals.updateId, update.id))
+          .limit(1);
+
+        return {
+          ...update,
+          approval: approval ? {
+            id: approval.id,
+            status: approval.status,
+            approvedBy: approval.approvedBy,
+            approvedAt: approval.approvedAt,
+            rejectedReason: approval.rejectedReason,
+          } : null,
+        };
+      })
+    );
+
     return NextResponse.json({
-      data: updates,
-      total: updates.length,
+      data: updatesWithApprovals,
+      total: updatesWithApprovals.length,
     });
   } catch (error) {
     if (error instanceof AuthenticationError) {

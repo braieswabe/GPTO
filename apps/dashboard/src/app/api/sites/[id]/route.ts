@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@gpto/database';
 import { sites, configVersions, telemetryEvents } from '@gpto/database/src/schema';
 import { eq, and, desc } from 'drizzle-orm';
-import { extractToken, verifyToken } from '@gpto/api';
+import { extractToken, verifyToken, migrateConfig } from '@gpto/api';
 import { AuthenticationError, NotFoundError } from '@gpto/api/src/errors';
 
 /**
@@ -49,9 +49,14 @@ export async function GET(
       .orderBy(desc(telemetryEvents.timestamp))
       .limit(100);
 
+    // Migrate config if it's in old format
+    const config = activeConfig?.configJson 
+      ? migrateConfig(activeConfig.configJson)
+      : null;
+
     return NextResponse.json({
       site,
-      config: activeConfig?.configJson || null,
+      config,
       telemetry: recentTelemetry,
     });
   } catch (error) {

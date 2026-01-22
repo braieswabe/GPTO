@@ -1,8 +1,9 @@
 'use client';
 
 import { ChatInterface } from '@/components/ChatInterface';
+import { ProtectedRoute } from '@/components/ProtectedRoute';
 
-export default function ChatPage() {
+function ChatPageContent() {
   return (
     <div className="h-screen flex flex-col bg-white">
       <div className="border-b border-gray-200 bg-white shadow-sm p-4">
@@ -15,5 +16,13 @@ export default function ChatPage() {
         <ChatInterface />
       </div>
     </div>
+  );
+}
+
+export default function ChatPage() {
+  return (
+    <ProtectedRoute>
+      <ChatPageContent />
+    </ProtectedRoute>
   );
 }

@@ -5,6 +5,59 @@ import { useParams } from 'next/navigation';
 import Link from 'next/link';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import { UpdateHistory } from '@/components/UpdateHistory';
+import { ProtectedRoute } from '@/components/ProtectedRoute';
+import { useState, useEffect } from 'react';
+
+function InstallationInstructions({ siteId }: { siteId: string }) {
+  const [origin, setOrigin] = useState('https://your-dashboard-url');
+  
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      setOrigin(window.location.origin);
+    }
+  }, []);
+
+  const scriptTag = `<script
+  src="${origin}/black-box.js"
+  data-config-url="${origin}/api/sites/${siteId}/config"
+  data-telemetry-url="${origin}/api/telemetry/events"
+  data-site-id="${siteId}"
+  async
+></script>`;
+
+  const handleCopy = () => {
+    navigator.clipboard.writeText(scriptTag);
+    alert('Script copied to clipboard!');
+  };
+
+  return (
+    <div className="bg-blue-50 border border-blue-200 rounded-lg p-6 mb-8">
+      <h2 className="text-lg font-semibold text-blue-900 mb-3 flex items-center">
+        <svg className="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+        </svg>
+        Install Black Box Script
+      </h2>
+      <p className="text-sm text-blue-800 mb-4">
+        Add this script tag to your website to enable Black Box and telemetry:
+      </p>
+      <div className="bg-white p-4 rounded border border-blue-200 mb-4">
+        <pre className="text-xs font-mono text-gray-800 overflow-x-auto whitespace-pre-wrap break-words">
+{scriptTag}
+        </pre>
+      </div>
+      <button
+        onClick={handleCopy}
+        className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm font-medium transition-colors"
+      >
+        Copy Script Tag
+      </button>
+      <p className="text-xs text-blue-700 mt-3">
+        💡 <strong>Note:</strong> Make sure to build the Black Box script first: <code className="bg-blue-100 px-1 rounded">pnpm --filter @gpto/black-box build</code>
+      </p>
+    </div>
+  );
+}
 
 interface SiteDetail {
   site: {
@@ -48,7 +101,7 @@ async function rollbackSite(siteId: string, targetVersion: string) {
   return response.json();
 }
 
-export default function SiteDetailPage() {
+function SiteDetailPageContent() {
   const params = useParams();
   const queryClient = useQueryClient();
   const siteId = params.id as string;
@@ -138,6 +191,9 @@ export default function SiteDetailPage() {
         </div>
       </div>
 
+      {/* Installation Instructions */}
+      <InstallationInstructions siteId={siteId} />
+
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
         <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
           <h2 className="text-xl font-semibold mb-4 text-gray-900">Telemetry</h2>
@@ -196,5 +252,13 @@ export default function SiteDetailPage() {
       )}
       </div>
     </div>
+  );
+}
+
+export default function SiteDetailPage() {
+  return (
+    <ProtectedRoute>
+      <SiteDetailPageContent />
+    </ProtectedRoute>
   );
 }

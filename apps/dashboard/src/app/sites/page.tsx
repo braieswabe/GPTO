@@ -2,6 +2,7 @@
 
 import { useQuery } from '@tanstack/react-query';
 import Link from 'next/link';
+import { ProtectedRoute } from '@/components/ProtectedRoute';
 
 interface Site {
   id: string;
@@ -28,7 +29,7 @@ async function fetchSites(): Promise<Site[]> {
   }
 }
 
-export default function SitesPage() {
+function SitesPageContent() {
   const { data: sites, isLoading, error } = useQuery({
     queryKey: ['sites'],
     queryFn: fetchSites,
@@ -145,5 +146,13 @@ export default function SitesPage() {
       )}
       </div>
     </div>
+  );
+}
+
+export default function SitesPage() {
+  return (
+    <ProtectedRoute>
+      <SitesPageContent />
+    </ProtectedRoute>
   );
 }

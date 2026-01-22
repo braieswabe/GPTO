@@ -3,18 +3,27 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useState } from 'react';
+import { useAuth } from '@/contexts/AuthContext';
 
 export function Navigation() {
   const pathname = usePathname();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const { isAuthenticated, logout, user } = useAuth();
 
-  const navItems = [
+  const publicNavItems = [
     { href: '/', label: 'Home' },
+  ];
+
+  const protectedNavItems = [
     { href: '/dashboard', label: 'Dashboard' },
     { href: '/sites', label: 'Sites' },
     { href: '/chat', label: 'PantheraChat' },
     { href: '/settings', label: 'Settings' },
   ];
+
+  const navItems = isAuthenticated 
+    ? [...publicNavItems, ...protectedNavItems]
+    : publicNavItems;
 
   return (
     <nav className="bg-white border-b border-gray-200">
@@ -45,7 +54,27 @@ export function Navigation() {
               })}
             </div>
           </div>
-          <div className="flex items-center">
+          <div className="flex items-center space-x-4">
+            {isAuthenticated ? (
+              <>
+                <div className="hidden sm:block text-sm text-gray-600">
+                  {user?.email}
+                </div>
+                <button
+                  onClick={logout}
+                  className="hidden sm:block px-4 py-2 text-sm font-medium text-gray-700 hover:text-gray-900"
+                >
+                  Logout
+                </button>
+              </>
+            ) : (
+              <Link
+                href="/login"
+                className="hidden sm:block px-4 py-2 text-sm font-medium text-blue-600 hover:text-blue-700"
+              >
+                Login
+              </Link>
+            )}
             <button
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
               className="sm:hidden inline-flex items-center justify-center p-2 rounded-md text-gray-400 hover:text-gray-500 hover:bg-gray-100"
@@ -97,6 +126,30 @@ export function Navigation() {
                 </Link>
               );
             })}
+            {isAuthenticated ? (
+              <>
+                <div className="px-3 py-2 text-sm text-gray-600 border-t border-gray-200 mt-2 pt-2">
+                  {user?.email}
+                </div>
+                <button
+                  onClick={() => {
+                    setMobileMenuOpen(false);
+                    logout();
+                  }}
+                  className="block w-full text-left pl-3 pr-4 py-2 text-base font-medium text-gray-500 hover:bg-gray-50 hover:text-gray-700"
+                >
+                  Logout
+                </button>
+              </>
+            ) : (
+              <Link
+                href="/login"
+                className="block pl-3 pr-4 py-2 border-l-4 border-transparent text-base font-medium text-blue-600 hover:bg-gray-50 hover:text-blue-700"
+                onClick={() => setMobileMenuOpen(false)}
+              >
+                Login
+              </Link>
+            )}
           </div>
         </div>
       )}

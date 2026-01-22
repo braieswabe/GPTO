@@ -23,17 +23,23 @@ export class SchemaValidator {
    * Validate data against a schema
    */
   validate<T = unknown>(schema: object, data: unknown): data is T {
-    const validate = this.compile<T>(schema);
-    return validate(data);
+    const validateFn = this.compile<T>(schema);
+    const isValid = validateFn(data);
+    // Store errors from the validation function
+    this.lastErrors = validateFn.errors || null;
+    return isValid;
   }
 
+  private lastErrors: any[] | null = null;
+
   /**
-   * Get validation errors
+   * Get validation errors from the last validation
    */
   getErrors(): string[] {
-    return this.ajv.errors?.map((err) => {
-      const path = err.instancePath || err.schemaPath;
-      return `${path}: ${err.message}`;
+    const errors = this.lastErrors || this.ajv.errors;
+    return errors?.map((err) => {
+      const path = err.instancePath || err.schemaPath || 'root';
+      return `${path}: ${err.message || 'validation failed'}`;
     }) || [];
   }
 }

@@ -53,6 +53,10 @@ class PantheraBlackBox {
   async init(): Promise<void> {
     if (this.initialized) return;
 
+    // #region agent log
+    fetch('http://127.0.0.1:7251/ingest/f2bef142-91a5-4d7a-be78-4c2383eb5638',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'black-box/runtime.ts:53',message:'Black Box init started',data:{configUrl:this.configUrl,siteId:this.siteId},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'D'})}).catch(()=>{});
+    // #endregion
+
     try {
       const response = await fetch(this.configUrl, {
         method: 'GET',
@@ -62,11 +66,19 @@ class PantheraBlackBox {
         cache: 'no-cache',
       });
 
+      // #region agent log
+      fetch('http://127.0.0.1:7251/ingest/f2bef142-91a5-4d7a-be78-4c2383eb5638',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'black-box/runtime.ts:64',message:'Config fetch response received',data:{ok:response.ok,status:response.status,statusText:response.statusText},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'D'})}).catch(()=>{});
+      // #endregion
+
       if (!response.ok) {
         throw new Error(`Failed to load config: ${response.status}`);
       }
 
       const data = await response.json();
+      
+      // #region agent log
+      fetch('http://127.0.0.1:7251/ingest/f2bef142-91a5-4d7a-be78-4c2383eb5638',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'black-box/runtime.ts:72',message:'Config JSON parsed',data:{hasPantheraBlackbox:!!data.panthera_blackbox,hasSite:!!data.panthera_blackbox?.site,brand:data.panthera_blackbox?.site?.brand,telemetryEmit:data.panthera_blackbox?.telemetry?.emit},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'D'})}).catch(()=>{});
+      // #endregion
       
       // Basic validation - ensure it has the expected structure
       if (!data.panthera_blackbox || !data.panthera_blackbox.site) {
@@ -79,12 +91,25 @@ class PantheraBlackBox {
       // Apply configuration if needed
       this.applyConfig();
 
+      // #region agent log
+      fetch('http://127.0.0.1:7251/ingest/f2bef142-91a5-4d7a-be78-4c2383eb5638',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'black-box/runtime.ts:85',message:'Config applied',data:{initialized:this.initialized,telemetryEmit:this.config.panthera_blackbox.telemetry?.emit},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'D'})}).catch(()=>{});
+      // #endregion
+
       // Start telemetry if enabled
       if (this.config.panthera_blackbox.telemetry?.emit) {
         this.startTelemetry();
+        
+        // #region agent log
+        fetch('http://127.0.0.1:7251/ingest/f2bef142-91a5-4d7a-be78-4c2383eb5638',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'black-box/runtime.ts:90',message:'Telemetry started',data:{telemetryUrl:this.telemetryUrl},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'D'})}).catch(()=>{});
+        // #endregion
       }
     } catch (error) {
       console.error('[Panthera Black Box] Initialization failed:', error);
+      
+      // #region agent log
+      fetch('http://127.0.0.1:7251/ingest/f2bef142-91a5-4d7a-be78-4c2383eb5638',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'black-box/runtime.ts:95',message:'Black Box init failed',data:{error:error instanceof Error?error.message:String(error)},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'D'})}).catch(()=>{});
+      // #endregion
+      
       // Fail silently in production, but log for debugging
     }
   }
@@ -96,6 +121,10 @@ class PantheraBlackBox {
     if (!this.config) return;
 
     const config = this.config.panthera_blackbox;
+    
+    // #region agent log
+    fetch('http://127.0.0.1:7251/ingest/f2bef142-91a5-4d7a-be78-4c2383eb5638',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'black-box/runtime.ts:95',message:'applyConfig called',data:{hasConfig:!!this.config,brand:config.site?.brand,telemetryEmit:config.telemetry?.emit,autofillEnabled:config.autofill?.enabled,hasAds:!!config.ads?.slots},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'E'})}).catch(()=>{});
+    // #endregion
     
     // Inject JSON-LD schema if configured
     this.injectSchema(config);
@@ -109,6 +138,10 @@ class PantheraBlackBox {
     if (config.ads?.slots) {
       this.initializeAdSlots(config);
     }
+    
+    // #region agent log
+    fetch('http://127.0.0.1:7251/ingest/f2bef142-91a5-4d7a-be78-4c2383eb5638',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'black-box/runtime.ts:112',message:'applyConfig completed',data:{schemaInjected:!!document.querySelector('script[data-panthera]')},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'E'})}).catch(()=>{});
+    // #endregion
   }
 
   /**

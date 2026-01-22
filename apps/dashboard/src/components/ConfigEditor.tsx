@@ -1,17 +1,32 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 
 interface ConfigEditorProps {
   initialConfig: unknown;
   onSubmit: (config: unknown) => Promise<void>;
   onCancel?: () => void;
+  externalConfig?: unknown; // For updates from Panthera
 }
 
-export function ConfigEditor({ initialConfig, onSubmit, onCancel }: ConfigEditorProps) {
+export function ConfigEditor({ initialConfig, onSubmit, onCancel, externalConfig }: ConfigEditorProps) {
   const [config, setConfig] = useState(() => JSON.stringify(initialConfig, null, 2));
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // Update config when externalConfig changes (from Panthera)
+  useEffect(() => {
+    if (externalConfig) {
+      try {
+        const configString = JSON.stringify(externalConfig, null, 2);
+        setConfig(configString);
+        setError(null); // Clear any previous errors
+      } catch (err) {
+        console.error('Error updating config from Panthera:', err);
+        setError('Failed to update configuration');
+      }
+    }
+  }, [externalConfig]);
 
   const handleSubmit = async () => {
     try {

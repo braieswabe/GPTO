@@ -37,7 +37,15 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // #region agent log
+    fetch('http://127.0.0.1:7251/ingest/f2bef142-91a5-4d7a-be78-4c2383eb5638',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'api/governance/approve/route.ts:40',message:'Approval API called',data:{approvalId,status,userId:payload.userId},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A'})}).catch(()=>{});
+    // #endregion
+
     await processApproval(approvalId, payload.userId, status, body.reason);
+
+    // #region agent log
+    fetch('http://127.0.0.1:7251/ingest/f2bef142-91a5-4d7a-be78-4c2383eb5638',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'api/governance/approve/route.ts:43',message:'Approval processed successfully',data:{approvalId,status},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A'})}).catch(()=>{});
+    // #endregion
 
     return NextResponse.json({
       success: true,

@@ -1,6 +1,15 @@
 'use client';
 
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useState } from 'react';
+
+interface Approval {
+  id: string;
+  status: 'pending' | 'approved' | 'rejected';
+  approvedBy: string | null;
+  approvedAt: string | null;
+  rejectedReason: string | null;
+}
 
 interface Update {
   id: string;
@@ -9,6 +18,7 @@ interface Update {
   appliedAt: string | null;
   rolledBackAt: string | null;
   createdAt: string;
+  approval: Approval | null;
 }
 
 interface UpdateHistoryProps {
@@ -28,11 +38,54 @@ async function fetchUpdates(siteId: string): Promise<Update[]> {
   return data.data || [];
 }
 
+async function approveUpdate(approvalId: string, status: 'approved' | 'rejected', reason?: string) {
+  const response = await fetch('/api/governance/approve', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${localStorage.getItem('token') || ''}`,
+    },
+    body: JSON.stringify({ approvalId, status, reason }),
+  });
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(error.error || 'Failed to process approval');
+  }
+  return response.json();
+}
+
 export function UpdateHistory({ siteId }: UpdateHistoryProps) {
+  const queryClient = useQueryClient();
+  const [processingId, setProcessingId] = useState<string | null>(null);
+
   const { data: updates, isLoading } = useQuery({
     queryKey: ['updates', siteId],
     queryFn: () => fetchUpdates(siteId),
   });
+
+  const approveMutation = useMutation({
+    mutationFn: ({ approvalId, status, reason }: { approvalId: string; status: 'approved' | 'rejected'; reason?: string }) =>
+      approveUpdate(approvalId, status, reason),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['updates', siteId] });
+      queryClient.invalidateQueries({ queryKey: ['site', siteId] });
+      setProcessingId(null);
+    },
+    onError: () => {
+      setProcessingId(null);
+    },
+  });
+
+  const handleApprove = (approvalId: string) => {
+    setProcessingId(approvalId);
+    approveMutation.mutate({ approvalId, status: 'approved' });
+  };
+
+  const handleReject = (approvalId: string) => {
+    const reason = prompt('Reason for rejection (optional):');
+    setProcessingId(approvalId);
+    approveMutation.mutate({ approvalId, status: 'rejected', reason: reason || undefined });
+  };
 
   if (isLoading) {
     return (
@@ -85,7 +138,7 @@ export function UpdateHistory({ siteId }: UpdateHistoryProps) {
                   {new Date(update.createdAt).toLocaleString()}
                 </div>
               </div>
-              <div>
+              <div className="flex items-center gap-2">
                 {update.rolledBackAt ? (
                   <span className="px-3 py-1 text-xs font-medium rounded-full bg-red-100 text-red-800">
                     Rolled Back
@@ -94,6 +147,31 @@ export function UpdateHistory({ siteId }: UpdateHistoryProps) {
                   <span className="px-3 py-1 text-xs font-medium rounded-full bg-green-100 text-green-800">
                     Applied
                   </span>
+                ) : update.approval?.status === 'rejected' ? (
+                  <span className="px-3 py-1 text-xs font-medium rounded-full bg-red-100 text-red-800">
+                    Rejected
+                  </span>
+                ) : update.approval?.status === 'approved' ? (
+                  <span className="px-3 py-1 text-xs font-medium rounded-full bg-blue-100 text-blue-800">
+                    Approved
+                  </span>
+                ) : update.approval ? (
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => handleApprove(update.approval!.id)}
+                      disabled={processingId === update.approval!.id}
+                      className="px-3 py-1 text-xs font-medium rounded-full bg-green-600 text-white hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                    >
+                      {processingId === update.approval!.id ? 'Processing...' : 'Approve'}
+                    </button>
+                    <button
+                      onClick={() => handleReject(update.approval!.id)}
+                      disabled={processingId === update.approval!.id}
+                      className="px-3 py-1 text-xs font-medium rounded-full bg-red-600 text-white hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                    >
+                      Reject
+                    </button>
+                  </div>
                 ) : (
                   <span className="px-3 py-1 text-xs font-medium rounded-full bg-yellow-100 text-yellow-800">
                     Pending
@@ -101,6 +179,11 @@ export function UpdateHistory({ siteId }: UpdateHistoryProps) {
                 )}
               </div>
             </div>
+            {update.approval?.rejectedReason && (
+              <div className="mt-2 p-2 bg-red-50 border border-red-200 rounded text-xs text-red-700">
+                Rejection reason: {update.approval.rejectedReason}
+              </div>
+            )}
           </div>
         ))}
       </div>

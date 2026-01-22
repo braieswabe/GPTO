@@ -3,10 +3,9 @@
 import { useQuery } from '@tanstack/react-query';
 import Link from 'next/link';
 import { RoleBasedAccess } from '@/components/RoleBasedAccess';
+import { ProtectedRoute } from '@/components/ProtectedRoute';
 import { UserRole } from '@gpto/shared';
-
-// Placeholder for user role - would come from auth context
-const currentUserRole: UserRole = 'admin';
+import { useAuth } from '@/contexts/AuthContext';
 
 async function fetchDashboardData() {
   try {
@@ -37,7 +36,9 @@ async function fetchDashboardData() {
   }
 }
 
-export default function DashboardPage() {
+function DashboardContent() {
+  const { user } = useAuth();
+  const currentUserRole: UserRole = (user?.role as UserRole) || 'viewer';
   const { data, isLoading } = useQuery({
     queryKey: ['dashboard'],
     queryFn: fetchDashboardData,
@@ -180,5 +181,13 @@ export default function DashboardPage() {
       </div>
       </div>
     </div>
+  );
+}
+
+export default function DashboardPage() {
+  return (
+    <ProtectedRoute>
+      <DashboardContent />
+    </ProtectedRoute>
   );
 }

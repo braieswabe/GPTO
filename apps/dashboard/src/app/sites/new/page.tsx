@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useMutation } from '@tanstack/react-query';
 import Link from 'next/link';
+import { ProtectedRoute } from '@/components/ProtectedRoute';
 
 interface CreateSiteData {
   domain: string;
@@ -13,22 +14,42 @@ interface CreateSiteData {
 }
 
 async function createSite(data: CreateSiteData) {
+  // #region agent log
+  const tokenFromStorage = localStorage.getItem('token');
+  fetch('http://127.0.0.1:7251/ingest/f2bef142-91a5-4d7a-be78-4c2383eb5638',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'sites/new/page.tsx:15',message:'createSite called',data:{tokenExists:!!tokenFromStorage,tokenLength:tokenFromStorage?.length||0,tokenValue:tokenFromStorage?tokenFromStorage.substring(0,20)+'...':null,hasBearer:tokenFromStorage?.startsWith('Bearer')||false},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A'})}).catch(()=>{});
+  // #endregion
+  
+  const authToken = tokenFromStorage || '';
+  const authHeader = `Bearer ${authToken}`;
+  
+  // #region agent log
+  fetch('http://127.0.0.1:7251/ingest/f2bef142-91a5-4d7a-be78-4c2383eb5638',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'sites/new/page.tsx:20',message:'Auth header prepared',data:{authHeaderLength:authHeader.length,authHeaderStartsWithBearer:authHeader.startsWith('Bearer '),tokenIsEmpty:authToken===''},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'B'})}).catch(()=>{});
+  // #endregion
+  
   const response = await fetch('/api/sites', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      Authorization: `Bearer ${localStorage.getItem('token') || ''}`,
+      Authorization: authHeader,
     },
     body: JSON.stringify(data),
   });
+  
+  // #region agent log
+  fetch('http://127.0.0.1:7251/ingest/f2bef142-91a5-4d7a-be78-4c2383eb5638',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'sites/new/page.tsx:30',message:'API response received',data:{status:response.status,statusText:response.statusText,ok:response.ok,headers:Object.fromEntries(response.headers.entries())},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'C'})}).catch(()=>{});
+  // #endregion
+  
   if (!response.ok) {
     const error = await response.json();
+    // #region agent log
+    fetch('http://127.0.0.1:7251/ingest/f2bef142-91a5-4d7a-be78-4c2383eb5638',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'sites/new/page.tsx:35',message:'API error response',data:{status:response.status,error:error,errorMessage:error.error},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'D'})}).catch(()=>{});
+    // #endregion
     throw new Error(error.error || 'Failed to create site');
   }
   return response.json();
 }
 
-export default function NewSitePage() {
+function NewSitePageContent() {
   const router = useRouter();
   const [domain, setDomain] = useState('');
   const [brand, setBrand] = useState('');
@@ -47,10 +68,29 @@ export default function NewSitePage() {
     e.preventDefault();
     const newErrors: Record<string, string> = {};
 
+    let cleanedDomain = '';
     if (!domain.trim()) {
       newErrors.domain = 'Domain is required';
-    } else if (!/^[a-zA-Z0-9][a-zA-Z0-9-]*[a-zA-Z0-9]*\.[a-zA-Z]{2,}$/.test(domain)) {
-      newErrors.domain = 'Please enter a valid domain';
+    } else {
+      // Strip protocol (http://, https://) and trailing slashes/paths
+      cleanedDomain = domain.trim();
+      
+      // Remove protocol if present
+      cleanedDomain = cleanedDomain.replace(/^https?:\/\//i, '');
+      
+      // Remove trailing slash and any path
+      cleanedDomain = cleanedDomain.split('/')[0];
+      
+      // Remove port if present
+      cleanedDomain = cleanedDomain.split(':')[0];
+      
+      // Updated regex to support subdomains: allows multiple dot-separated parts
+      // Pattern: (subdomain.)*domain.tld where each part is alphanumeric with optional hyphens
+      const regexPattern = /^([a-zA-Z0-9]([a-zA-Z0-9-]*[a-zA-Z0-9])?\.)+[a-zA-Z]{2,}$/;
+      
+      if (!regexPattern.test(cleanedDomain)) {
+        newErrors.domain = 'Please enter a valid domain (e.g., example.com or https://example.com)';
+      }
     }
 
     if (!brand.trim()) {
@@ -63,8 +103,12 @@ export default function NewSitePage() {
     }
 
     setErrors({});
+    
+    // Use cleaned domain if validation passed, otherwise use trimmed original
+    const finalDomain = cleanedDomain || domain.trim();
+    
     createMutation.mutate({
-      domain: domain.trim(),
+      domain: finalDomain,
       brand: brand.trim(),
       verticals: verticals.split(',').map(v => v.trim()).filter(Boolean),
       geo: geo.split(',').map(g => g.trim()).filter(Boolean),
@@ -178,5 +222,13 @@ export default function NewSitePage() {
       </form>
       </div>
     </div>
+  );
+}
+
+export default function NewSitePage() {
+  return (
+    <ProtectedRoute>
+      <NewSitePageContent />
+    </ProtectedRoute>
   );
 }
