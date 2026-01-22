@@ -2,8 +2,9 @@ import { defineConfig } from 'tsup';
 
 export default defineConfig({
   entry: ['src/runtime.ts'],
-  format: ['iife'],
+  format: ['iife', 'esm'],
   globalName: 'PantheraBlackBox',
+  dts: true,
   minify: true,
   sourcemap: true,
   clean: true,

@@ -11,13 +11,31 @@ Minimal JavaScript runtime (<10KB gzipped) that reads JSON configuration and sen
 
 ## Usage
 
-### Installation
+### Installation (npm, ESM-only)
+
+```bash
+npm install @careerdriver/black-box
+```
+
+```ts
+import { PantheraBlackBox } from '@careerdriver/black-box';
+
+const blackBox = new PantheraBlackBox({
+  configUrl: 'https://api.example.com/api/sites/[site-id]/config',
+  telemetryUrl: 'https://api.example.com/api/telemetry/events',
+  siteId: 'your-site-id',
+});
+
+await blackBox.init();
+```
+
+### Installation (script tag, IIFE build for CDN)
 
 Add the script tag to your HTML:
 
 ```html
 <script
-  src="https://your-cdn.vercel.app/black-box.js"
+  src="https://unpkg.com/@careerdriver/black-box@latest/dist/runtime.global.js"
   data-config-url="https://api.example.com/api/sites/[site-id]/config"
   data-telemetry-url="https://api.example.com/api/telemetry/events"
   data-site-id="your-site-id"
@@ -43,7 +61,10 @@ await blackBox.init();
 pnpm build
 ```
 
-Output: `dist/runtime.js` (minified, <10KB gzipped)
+Output:
+- `dist/runtime.js` (ESM)
+- `dist/runtime.global.js` (IIFE for script tag)
+- `dist/runtime.d.ts` (types)
 
 ## Deployment
 

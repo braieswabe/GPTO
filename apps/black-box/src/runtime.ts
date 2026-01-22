@@ -8,6 +8,49 @@
  * All operations are declarative JSON transformations only.
  */
 
+interface AutoFillForm {
+  selector: string;
+  map: Record<string, string>;
+}
+
+interface AutofillConfig {
+  enabled?: boolean;
+  forms?: AutoFillForm[];
+}
+
+interface AdSlot {
+  id: string;
+  contexts: string[];
+}
+
+interface AdsConfig {
+  slots?: AdSlot[];
+}
+
+interface AuthorityGroveNode {
+  sameAs?: string[];
+  keywords?: string[];
+}
+
+interface AuthorityGroveConfig {
+  node?: AuthorityGroveNode;
+}
+
+interface ProductConfig {
+  name?: string;
+  description?: string;
+}
+
+interface ServiceConfig {
+  name?: string;
+  description?: string;
+}
+
+interface FaqConfig {
+  question: string;
+  answer: string;
+}
+
 interface BlackBoxConfig {
   panthera_blackbox: {
     version: string;
@@ -21,6 +64,13 @@ interface BlackBoxConfig {
       emit: boolean;
       keys: string[];
     };
+    tier?: 'bronze' | 'silver' | 'gold';
+    autofill?: AutofillConfig;
+    ads?: AdsConfig;
+    authority_grove?: AuthorityGroveConfig;
+    products?: ProductConfig[];
+    services?: ServiceConfig[];
+    faqs?: FaqConfig[];
     [key: string]: unknown;
   };
 }
@@ -155,7 +205,7 @@ class PantheraBlackBox {
     existing.forEach(el => el.remove());
     
     // Get tier from config (if available) or default to bronze
-    const tier = (config as Record<string, unknown>).tier as 'bronze' | 'silver' | 'gold' | undefined || 'bronze';
+    const tier = config.tier ?? 'bronze';
     
     // Generate schemas based on tier
     const schemas = this.generateSchemasForTier(config, tier);
@@ -199,9 +249,9 @@ class PantheraBlackBox {
     // Silver and Gold tiers get additional schemas
     if (tier === 'silver' || tier === 'gold') {
       // Add Product schema if product data exists in config
-      if ((config as Record<string, unknown>).products) {
-        const products = (config as Record<string, unknown>).products as Array<Record<string, unknown>>;
-        products.forEach(product => {
+      if (config.products) {
+        const products = config.products;
+        products.forEach((product) => {
           schemas.push({
             '@context': 'https://schema.org',
             '@type': 'Product',
@@ -217,9 +267,9 @@ class PantheraBlackBox {
       }
       
       // Add Service schema if service data exists
-      if ((config as Record<string, unknown>).services) {
-        const services = (config as Record<string, unknown>).services as Array<Record<string, unknown>>;
-        services.forEach(service => {
+      if (config.services) {
+        const services = config.services;
+        services.forEach((service) => {
           schemas.push({
             '@context': 'https://schema.org',
             '@type': 'Service',
@@ -246,8 +296,8 @@ class PantheraBlackBox {
       }
       
       // Add FAQ schema if FAQ data exists
-      if ((config as Record<string, unknown>).faqs) {
-        const faqs = (config as Record<string, unknown>).faqs as Array<{ question: string; answer: string }>;
+      if (config.faqs) {
+        const faqs = config.faqs;
         if (faqs.length > 0) {
           schemas.push({
             '@context': 'https://schema.org',
@@ -274,15 +324,15 @@ class PantheraBlackBox {
   private initializeAutoFill(config: BlackBoxConfig['panthera_blackbox']): void {
     if (typeof window === 'undefined' || !config.autofill?.forms) return;
     
-    config.autofill.forms.forEach((form) => {
+    config.autofill.forms.forEach((form: AutoFillForm) => {
       const formElement = document.querySelector(form.selector);
       if (formElement) {
         // Store form config for later use
         (formElement as HTMLElement & { pantheraAutoFill?: typeof form }).pantheraAutoFill = form;
         
         // Listen for first field focus to trigger AutoFill
-        formElement.addEventListener('focusin', (e) => {
-          const target = e.target as HTMLElement;
+        formElement.addEventListener('focusin', (event: Event) => {
+          const target = event.target as HTMLElement;
           if (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.tagName === 'SELECT') {
             this.triggerAutoFill(form);
           }
@@ -318,7 +368,7 @@ class PantheraBlackBox {
   private initializeAdSlots(config: BlackBoxConfig['panthera_blackbox']): void {
     if (typeof window === 'undefined' || !config.ads?.slots) return;
     
-    config.ads.slots.forEach((slot) => {
+    config.ads.slots.forEach((slot: AdSlot) => {
       // #region agent log
       fetch('http://127.0.0.1:7251/ingest/f2bef142-91a5-4d7a-be78-4c2383eb5638',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'runtime.ts:226',message:'initializeAdSlots - original slot.id',data:{slotId:slot.id,slotIdType:typeof slot.id,slotIdString:String(slot.id),slotIdJSON:JSON.stringify(slot.id)},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A'})}).catch(()=>{});
       // #endregion
@@ -540,4 +590,5 @@ class PantheraBlackBox {
   (window as unknown as { panthera: PantheraBlackBox }).panthera = blackBox;
 })();
 
+export { PantheraBlackBox };
 export default PantheraBlackBox;

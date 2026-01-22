@@ -12,6 +12,7 @@ export function Navigation() {
 
   const publicNavItems = [
     { href: '/', label: 'Home' },
+    { href: '/docs', label: 'Documentation' },
   ];
 
   const protectedNavItems = [

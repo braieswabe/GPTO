@@ -1,12 +1,30 @@
 {
-  "name": "@gpto/black-box",
+  "name": "@careerdriver/black-box",
   "version": "1.0.0",
-  "private": true,
+  "private": false,
   "type": "module",
+  "files": [
+    "dist"
+  ],
+  "main": "./dist/runtime.js",
+  "module": "./dist/runtime.js",
+  "types": "./dist/runtime.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/runtime.d.ts",
+      "import": "./dist/runtime.js"
+    },
+    "./iife": "./dist/runtime.global.js"
+  },
+  "unpkg": "./dist/runtime.global.js",
+  "publishConfig": {
+    "access": "public"
+  },
   "scripts": {
-    "build": "tsup src/runtime.ts --format iife --global-name PantheraBlackBox --minify --sourcemap",
-    "dev": "tsup src/runtime.ts --format iife --global-name PantheraBlackBox --watch",
-    "type-check": "tsc --noEmit"
+    "build": "tsup src/runtime.ts --format iife,esm --global-name PantheraBlackBox --minify --sourcemap --dts",
+    "dev": "tsup src/runtime.ts --format iife,esm --global-name PantheraBlackBox --watch",
+    "type-check": "tsc --noEmit",
+    "prepublishOnly": "pnpm build"
   },
   "dependencies": {},
   "devDependencies": {
