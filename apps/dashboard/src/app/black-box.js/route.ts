@@ -34,16 +34,20 @@ export async function GET(request: NextRequest) {
       throw lastError || new Error('Script file not found in any expected location');
     }
 
+    const origin = request.headers.get('origin');
     return new NextResponse(scriptContent, {
       headers: {
         'Content-Type': 'application/javascript',
         'Cache-Control': 'public, max-age=31536000, immutable', // Cache for 1 year (immutable)
-        'Access-Control-Allow-Origin': '*', // Allow CORS for cross-origin sites
+        'Access-Control-Allow-Origin': origin || '*', // Allow CORS for cross-origin sites
+        'Access-Control-Allow-Methods': 'GET, OPTIONS',
+        'Access-Control-Allow-Headers': 'Content-Type',
       },
     });
   } catch (error) {
     console.error('Error serving Black Box script:', error);
     
+    const origin = request.headers.get('origin');
     // Fallback: return a message if script not found
     return new NextResponse(
       `console.error('[Panthera Black Box] Script not found. Please build the Black Box: pnpm --filter @gpto/black-box build');`,
@@ -51,8 +55,27 @@ export async function GET(request: NextRequest) {
         status: 404,
         headers: {
           'Content-Type': 'application/javascript',
+          'Access-Control-Allow-Origin': origin || '*',
+          'Access-Control-Allow-Methods': 'GET, OPTIONS',
+          'Access-Control-Allow-Headers': 'Content-Type',
         },
       }
     );
   }
+}
+
+/**
+ * OPTIONS handler for CORS preflight requests
+ */
+export async function OPTIONS(request: NextRequest) {
+  const origin = request.headers.get('origin');
+  return new NextResponse(null, {
+    status: 200,
+    headers: {
+      'Access-Control-Allow-Origin': origin || '*',
+      'Access-Control-Allow-Methods': 'GET, OPTIONS',
+      'Access-Control-Allow-Headers': 'Content-Type',
+      'Access-Control-Max-Age': '86400', // 24 hours
+    },
+  });
 }

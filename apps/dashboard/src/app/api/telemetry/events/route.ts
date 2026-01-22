@@ -10,11 +10,11 @@ import { telemetryEventSchema, validator } from '@gpto/schemas';
  * Validates events, applies rate limiting, and stores in Neon PostgreSQL.
  */
 export async function POST(request: NextRequest) {
+  // CORS headers for Black Box - declare once at function level
+  const origin = request.headers.get('origin');
+  const allowedOrigins = process.env.ALLOWED_ORIGINS?.split(',') || ['*'];
+  
   try {
-    // CORS headers for Black Box
-    const origin = request.headers.get('origin');
-    const allowedOrigins = process.env.ALLOWED_ORIGINS?.split(',') || ['*'];
-    
     if (origin && (allowedOrigins.includes('*') || allowedOrigins.includes(origin))) {
       // CORS will be handled by vercel.json headers, but we can add additional logic here
     }
@@ -32,7 +32,14 @@ export async function POST(request: NextRequest) {
       const errors = validator.getErrors();
       return NextResponse.json(
         { error: 'Validation failed', errors },
-        { status: 400 }
+        { 
+          status: 400,
+          headers: {
+            'Access-Control-Allow-Origin': origin || '*',
+            'Access-Control-Allow-Methods': 'POST, OPTIONS',
+            'Access-Control-Allow-Headers': 'Content-Type',
+          },
+        }
       );
     }
 
@@ -63,7 +70,14 @@ export async function POST(request: NextRequest) {
         id: inserted.id,
         timestamp: inserted.timestamp,
       },
-      { status: 201 }
+      { 
+        status: 201,
+        headers: {
+          'Access-Control-Allow-Origin': origin || '*',
+          'Access-Control-Allow-Methods': 'POST, OPTIONS',
+          'Access-Control-Allow-Headers': 'Content-Type',
+        },
+      }
     );
   } catch (error) {
     console.error('Telemetry ingestion error:', error);
@@ -71,7 +85,14 @@ export async function POST(request: NextRequest) {
     // Don't expose internal errors to clients
     return NextResponse.json(
       { error: 'Failed to process telemetry event' },
-      { status: 500 }
+      { 
+        status: 500,
+        headers: {
+          'Access-Control-Allow-Origin': origin || '*',
+          'Access-Control-Allow-Methods': 'POST, OPTIONS',
+          'Access-Control-Allow-Headers': 'Content-Type',
+        },
+      }
     );
   }
 }
@@ -79,13 +100,15 @@ export async function POST(request: NextRequest) {
 /**
  * OPTIONS handler for CORS preflight
  */
-export async function OPTIONS() {
+export async function OPTIONS(request: NextRequest) {
+  const origin = request.headers.get('origin');
   return new NextResponse(null, {
     status: 200,
     headers: {
-      'Access-Control-Allow-Origin': '*',
+      'Access-Control-Allow-Origin': origin || '*',
       'Access-Control-Allow-Methods': 'POST, OPTIONS',
       'Access-Control-Allow-Headers': 'Content-Type',
+      'Access-Control-Max-Age': '86400', // 24 hours
     },
   });
 }

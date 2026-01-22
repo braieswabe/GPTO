@@ -150,27 +150,122 @@ class PantheraBlackBox {
   private injectSchema(config: BlackBoxConfig['panthera_blackbox']): void {
     if (typeof document === 'undefined') return;
     
-    // Remove existing Panthera schema if present
-    const existing = document.querySelector('script[type="application/ld+json"][data-panthera]');
-    if (existing) {
-      existing.remove();
-    }
+    // Remove existing Panthera schemas if present
+    const existing = document.querySelectorAll('script[type="application/ld+json"][data-panthera]');
+    existing.forEach(el => el.remove());
     
-    // Create new schema script
-    const script = document.createElement('script');
-    script.type = 'application/ld+json';
-    script.setAttribute('data-panthera', 'true');
+    // Get tier from config (if available) or default to bronze
+    const tier = (config as Record<string, unknown>).tier as 'bronze' | 'silver' | 'gold' | undefined || 'bronze';
     
-    // Basic schema structure (would be enhanced with actual config data)
-    const schema = {
+    // Generate schemas based on tier
+    const schemas = this.generateSchemasForTier(config, tier);
+    
+    // Inject all schemas
+    schemas.forEach((schema, index) => {
+      const script = document.createElement('script');
+      script.type = 'application/ld+json';
+      script.setAttribute('data-panthera', 'true');
+      script.setAttribute('data-schema-index', index.toString());
+      script.textContent = JSON.stringify(schema);
+      document.head.appendChild(script);
+    });
+  }
+
+  /**
+   * Generate schemas based on tier
+   */
+  private generateSchemasForTier(
+    config: BlackBoxConfig['panthera_blackbox'],
+    tier: 'bronze' | 'silver' | 'gold'
+  ): unknown[] {
+    const schemas: unknown[] = [];
+    
+    // Base Organization schema (all tiers)
+    const baseSchema = {
       '@context': 'https://schema.org',
       '@type': 'Organization',
       name: config.site.brand,
       url: `https://${config.site.domain}`,
     };
     
-    script.textContent = JSON.stringify(schema);
-    document.head.appendChild(script);
+    // Add authority grove data if available
+    if (config.authority_grove?.node) {
+      (baseSchema as Record<string, unknown>).sameAs = config.authority_grove.node.sameAs;
+      (baseSchema as Record<string, unknown>).keywords = config.authority_grove.node.keywords;
+    }
+    
+    schemas.push(baseSchema);
+    
+    // Silver and Gold tiers get additional schemas
+    if (tier === 'silver' || tier === 'gold') {
+      // Add Product schema if product data exists in config
+      if ((config as Record<string, unknown>).products) {
+        const products = (config as Record<string, unknown>).products as Array<Record<string, unknown>>;
+        products.forEach(product => {
+          schemas.push({
+            '@context': 'https://schema.org',
+            '@type': 'Product',
+            name: product.name || config.site.brand,
+            description: product.description,
+            brand: {
+              '@type': 'Brand',
+              name: config.site.brand,
+            },
+            url: `https://${config.site.domain}`,
+          });
+        });
+      }
+      
+      // Add Service schema if service data exists
+      if ((config as Record<string, unknown>).services) {
+        const services = (config as Record<string, unknown>).services as Array<Record<string, unknown>>;
+        services.forEach(service => {
+          schemas.push({
+            '@context': 'https://schema.org',
+            '@type': 'Service',
+            name: service.name || config.site.brand,
+            description: service.description,
+            provider: {
+              '@type': 'Organization',
+              name: config.site.brand,
+              url: `https://${config.site.domain}`,
+            },
+          });
+        });
+      }
+      
+      // Add LocalBusiness schema if geo data exists
+      if (config.site.geo && config.site.geo.length > 0) {
+        schemas.push({
+          '@context': 'https://schema.org',
+          '@type': 'LocalBusiness',
+          name: config.site.brand,
+          url: `https://${config.site.domain}`,
+          areaServed: config.site.geo,
+        });
+      }
+      
+      // Add FAQ schema if FAQ data exists
+      if ((config as Record<string, unknown>).faqs) {
+        const faqs = (config as Record<string, unknown>).faqs as Array<{ question: string; answer: string }>;
+        if (faqs.length > 0) {
+          schemas.push({
+            '@context': 'https://schema.org',
+            '@type': 'FAQPage',
+            mainEntity: faqs.map(faq => ({
+              '@type': 'Question',
+              name: faq.question,
+              acceptedAnswer: {
+                '@type': 'Answer',
+                text: faq.answer,
+              },
+            })),
+          });
+        }
+      }
+    }
+    
+    return schemas;
   }
 
   /**
@@ -224,13 +319,65 @@ class PantheraBlackBox {
     if (typeof window === 'undefined' || !config.ads?.slots) return;
     
     config.ads.slots.forEach((slot) => {
-      const slotElement = document.querySelector(`[data-ad-slot="${slot.id}"]`);
-      if (slotElement) {
-        // Store slot config
-        (slotElement as HTMLElement & { pantheraAdSlot?: typeof slot }).pantheraAdSlot = slot;
+      // #region agent log
+      fetch('http://127.0.0.1:7251/ingest/f2bef142-91a5-4d7a-be78-4c2383eb5638',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'runtime.ts:226',message:'initializeAdSlots - original slot.id',data:{slotId:slot.id,slotIdType:typeof slot.id,slotIdString:String(slot.id),slotIdJSON:JSON.stringify(slot.id)},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A'})}).catch(()=>{});
+      // #endregion
+      
+      // Sanitize slot ID - aggressively remove quotes and ensure it's a valid CSS selector
+      let sanitizedId = String(slot.id || '').trim();
+      // Remove all quotes (single and double) from anywhere in the string
+      sanitizedId = sanitizedId.replace(/["']/g, '');
+      // Remove any remaining whitespace
+      sanitizedId = sanitizedId.trim();
+      
+      // #region agent log
+      fetch('http://127.0.0.1:7251/ingest/f2bef142-91a5-4d7a-be78-4c2383eb5638',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'runtime.ts:232',message:'initializeAdSlots - after sanitization',data:{sanitizedId,originalSlotId:slot.id,sanitizedLength:sanitizedId.length},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A'})}).catch(()=>{});
+      // #endregion
+      
+      if (!sanitizedId) {
+        // #region agent log
+        fetch('http://127.0.0.1:7251/ingest/f2bef142-91a5-4d7a-be78-4c2383eb5638',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'runtime.ts:236',message:'initializeAdSlots - empty after sanitization',data:{originalSlotId:slot.id},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A'})}).catch(()=>{});
+        // #endregion
+        return;
+      }
+      
+      try {
+        // Escape special CSS characters in the ID (but NOT quotes - they should already be removed)
+        // Only escape characters that need escaping in attribute selectors
+        const escapedId = sanitizedId.replace(/[!"#$%&'()*+,.\/:;<=>?@[\\\]^`{|}~]/g, '\\$&');
+        // Double-check: ensure no quotes made it through
+        if (escapedId.includes('"') || escapedId.includes("'")) {
+          // #region agent log
+          fetch('http://127.0.0.1:7251/ingest/f2bef142-91a5-4d7a-be78-4c2383eb5638',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'runtime.ts:243',message:'initializeAdSlots - quotes detected in escapedId',data:{escapedId,sanitizedId,originalSlotId:slot.id},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'B'})}).catch(()=>{});
+          // #endregion
+          throw new Error(`Slot ID contains quotes after sanitization: ${escapedId}`);
+        }
         
-        // In production, this would load ad creative and track impressions
-        this.loadAdCreative(slot);
+        const selector = `[data-ad-slot="${escapedId}"]`;
+        
+        // #region agent log
+        fetch('http://127.0.0.1:7251/ingest/f2bef142-91a5-4d7a-be78-4c2383eb5638',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'runtime.ts:250',message:'initializeAdSlots - selector construction',data:{escapedId,selector,selectorLength:selector.length,selectorChars:Array.from(selector)},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'B'})}).catch(()=>{});
+        // #endregion
+        
+        const slotElement = document.querySelector(selector);
+        
+        if (slotElement) {
+          // Store slot config
+          (slotElement as HTMLElement & { pantheraAdSlot?: typeof slot }).pantheraAdSlot = slot;
+          
+          // In production, this would load ad creative and track impressions
+          this.loadAdCreative(slot);
+        } else {
+          // #region agent log
+          fetch('http://127.0.0.1:7251/ingest/f2bef142-91a5-4d7a-be78-4c2383eb5638',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'runtime.ts:262',message:'initializeAdSlots - element not found',data:{selector,escapedId},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'D'})}).catch(()=>{});
+          // #endregion
+        }
+      } catch (error) {
+        // #region agent log
+        fetch('http://127.0.0.1:7251/ingest/f2bef142-91a5-4d7a-be78-4c2383eb5638',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'runtime.ts:267',message:'initializeAdSlots - error caught',data:{error:String(error),errorMessage:(error as Error).message,slotId:slot.id,sanitizedId,escapedId:sanitizedId.replace(/[!"#$%&'()*+,.\/:;<=>?@[\\\]^`{|}~]/g, '\\$&'),selector:`[data-ad-slot="${sanitizedId.replace(/[!"#$%&'()*+,.\/:;<=>?@[\\\]^`{|}~]/g, '\\$&')}"]`},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'C'})}).catch(()=>{});
+        // #endregion
+        
+        console.error(`[Panthera Black Box] Invalid ad slot selector for ID: ${slot.id}`, error);
       }
     });
   }

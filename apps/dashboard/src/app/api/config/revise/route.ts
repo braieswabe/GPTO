@@ -296,10 +296,12 @@ async function reviseConfigWithLLM(config: unknown, instruction: string): Promis
     changesMade = true;
   }
   if (instructionLower.includes('add ad slot') || instructionLower.includes('ad slot')) {
-    const adMatch = instruction.match(/slot[:\s]+([^\s\n]+)/i);
+    // Match: "add ad slot: sidebar" or "ad slot: sidebar" or "ad slot sidebar"
+    const adMatch = instruction.match(/slot[:\s]+["']?([^"'\s\n]+)["']?/i);
     if (adMatch) {
-      const slotId = adMatch[1].trim();
-      if (!revised.panthera_blackbox.ads.slots.find((s: any) => s.id === slotId)) {
+      // Remove quotes and sanitize the slot ID
+      const slotId = adMatch[1].trim().replace(/["']/g, '');
+      if (slotId && !revised.panthera_blackbox.ads.slots.find((s: any) => s.id === slotId)) {
         revised.panthera_blackbox.ads.slots.push({ id: slotId, contexts: [] });
         changesMade = true;
       }

@@ -110,11 +110,80 @@ export const securitySessions = pgTable('security_sessions', {
   createdAt: timestamp('created_at').defaultNow().notNull(),
 });
 
+// Subscriptions table
+export const subscriptions = pgTable('subscriptions', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  siteId: uuid('site_id').references(() => sites.id).notNull(),
+  tier: varchar('tier', { length: 50 }).notNull(), // bronze|silver|gold
+  stripeSubscriptionId: varchar('stripe_subscription_id', { length: 255 }),
+  stripeCustomerId: varchar('stripe_customer_id', { length: 255 }),
+  status: varchar('status', { length: 50 }).notNull().default('active'), // active|cancelled|past_due
+  currentPeriodStart: timestamp('current_period_start'),
+  currentPeriodEnd: timestamp('current_period_end'),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+  updatedAt: timestamp('updated_at').defaultNow().notNull(),
+});
+
+// Audits table
+export const audits = pgTable('audits', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  siteId: uuid('site_id').references(() => sites.id).notNull(),
+  tier: varchar('tier', { length: 50 }).notNull(),
+  type: varchar('type', { length: 50 }).notNull(), // technical|content|competitor
+  status: varchar('status', { length: 50 }).notNull().default('pending'), // pending|completed|failed
+  results: jsonb('results'),
+  recommendations: jsonb('recommendations'),
+  scorecard: jsonb('scorecard'),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+  completedAt: timestamp('completed_at'),
+});
+
+// Competitors table
+export const competitors = pgTable('competitors', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  siteId: uuid('site_id').references(() => sites.id).notNull(),
+  domain: varchar('domain', { length: 255 }).notNull(),
+  name: varchar('name', { length: 255 }),
+  telemetryData: jsonb('telemetry_data'),
+  sentimentData: jsonb('sentiment_data'),
+  lastScrapedAt: timestamp('last_scraped_at'),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+});
+
+// Reports table
+export const reports = pgTable('reports', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  siteId: uuid('site_id').references(() => sites.id).notNull(),
+  auditId: uuid('audit_id').references(() => audits.id),
+  type: varchar('type', { length: 50 }).notNull(), // pdf|email|scorecard
+  format: jsonb('format'),
+  fileUrl: varchar('file_url', { length: 500 }),
+  deliveredAt: timestamp('delivered_at'),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+});
+
+// Panthera Canon plans table
+export const pantheraCanonPlans = pgTable('panthera_canon_plans', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  siteId: uuid('site_id').references(() => sites.id).notNull(),
+  tier: varchar('tier', { length: 50 }).notNull(),
+  planData: jsonb('plan_data').notNull(),
+  optimizationType: varchar('optimization_type', { length: 100 }),
+  status: varchar('status', { length: 50 }).notNull().default('draft'), // draft|active|completed
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+  updatedAt: timestamp('updated_at').defaultNow().notNull(),
+});
+
 // Relations
 export const sitesRelations = relations(sites, ({ many }) => ({
   telemetryEvents: many(telemetryEvents),
   configVersions: many(configVersions),
   updateHistory: many(updateHistory),
+  subscriptions: many(subscriptions),
+  audits: many(audits),
+  competitors: many(competitors),
+  reports: many(reports),
+  pantheraCanonPlans: many(pantheraCanonPlans),
 }));
 
 export const usersRelations = relations(users, ({ many }) => ({
@@ -147,4 +216,44 @@ export const updateHistoryRelations = relations(updateHistory, ({ one, many }) =
   }),
   approvals: many(approvals),
   rollbackPoints: many(rollbackPoints),
+}));
+
+export const subscriptionsRelations = relations(subscriptions, ({ one }) => ({
+  site: one(sites, {
+    fields: [subscriptions.siteId],
+    references: [sites.id],
+  }),
+}));
+
+export const auditsRelations = relations(audits, ({ one, many }) => ({
+  site: one(sites, {
+    fields: [audits.siteId],
+    references: [sites.id],
+  }),
+  reports: many(reports),
+}));
+
+export const competitorsRelations = relations(competitors, ({ one }) => ({
+  site: one(sites, {
+    fields: [competitors.siteId],
+    references: [sites.id],
+  }),
+}));
+
+export const reportsRelations = relations(reports, ({ one }) => ({
+  site: one(sites, {
+    fields: [reports.siteId],
+    references: [sites.id],
+  }),
+  audit: one(audits, {
+    fields: [reports.auditId],
+    references: [audits.id],
+  }),
+}));
+
+export const pantheraCanonPlansRelations = relations(pantheraCanonPlans, ({ one }) => ({
+  site: one(sites, {
+    fields: [pantheraCanonPlans.siteId],
+    references: [sites.id],
+  }),
 }));

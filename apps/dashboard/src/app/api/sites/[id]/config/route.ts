@@ -43,9 +43,17 @@ export async function GET(
     // #endregion
 
     if (!activeConfig) {
+      const origin = request.headers.get('origin');
       return NextResponse.json(
         { error: 'No active configuration found' },
-        { status: 404 }
+        { 
+          status: 404,
+          headers: {
+            'Access-Control-Allow-Origin': origin || '*',
+            'Access-Control-Allow-Methods': 'GET, OPTIONS',
+            'Access-Control-Allow-Headers': 'Content-Type',
+          },
+        }
       );
     }
 
@@ -56,20 +64,59 @@ export async function GET(
     fetch('http://127.0.0.1:7251/ingest/f2bef142-91a5-4d7a-be78-4c2383eb5638',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'api/sites/[id]/config/route.ts:49',message:'Returning config JSON',data:{version:activeConfig.version,hasTelemetry:!!configJson?.panthera_blackbox?.telemetry,telemetryEmit:configJson?.panthera_blackbox?.telemetry?.emit,brand:configJson?.panthera_blackbox?.site?.brand},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'C'})}).catch(()=>{});
     // #endregion
     
+    // Get origin from request for CORS
+    const origin = request.headers.get('origin');
+    
     return NextResponse.json(configJson, {
       headers: {
         'Cache-Control': 'public, max-age=60', // Cache for 1 minute
+        'Access-Control-Allow-Origin': origin || '*', // Allow CORS from requesting origin
+        'Access-Control-Allow-Methods': 'GET, OPTIONS',
+        'Access-Control-Allow-Headers': 'Content-Type',
+        'Access-Control-Max-Age': '86400', // 24 hours
       },
     });
   } catch (error) {
+    const origin = request.headers.get('origin');
+    const corsHeaders = {
+      'Access-Control-Allow-Origin': origin || '*',
+      'Access-Control-Allow-Methods': 'GET, OPTIONS',
+      'Access-Control-Allow-Headers': 'Content-Type',
+    };
+    
     if (error instanceof NotFoundError) {
-      return NextResponse.json({ error: error.message }, { status: error.statusCode });
+      return NextResponse.json(
+        { error: error.message }, 
+        { 
+          status: error.statusCode,
+          headers: corsHeaders,
+        }
+      );
     }
     
     console.error('Error fetching config:', error);
     return NextResponse.json(
       { error: 'Failed to fetch config' },
-      { status: 500 }
+      { 
+        status: 500,
+        headers: corsHeaders,
+      }
     );
   }
+}
+
+/**
+ * OPTIONS handler for CORS preflight requests
+ */
+export async function OPTIONS(request: NextRequest) {
+  const origin = request.headers.get('origin');
+  return new NextResponse(null, {
+    status: 200,
+    headers: {
+      'Access-Control-Allow-Origin': origin || '*',
+      'Access-Control-Allow-Methods': 'GET, OPTIONS',
+      'Access-Control-Allow-Headers': 'Content-Type',
+      'Access-Control-Max-Age': '86400', // 24 hours
+    },
+  });
 }
