@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { extractToken, verifyToken, AuthenticationError } from '@gpto/api';
 import { createSubscription, createCustomer } from '@gpto/billing';
 
+export const dynamic = 'force-dynamic';
+
 /**
  * POST /api/subscriptions/create
  * 

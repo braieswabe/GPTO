@@ -9,6 +9,8 @@ import { sendEmailReport } from '@gpto/reports';
 import { getSiteTier } from '@gpto/tiers';
 import { sites } from '@gpto/database/src/schema';
 
+export const dynamic = 'force-dynamic';
+
 /**
  * POST /api/reports/generate
  * 

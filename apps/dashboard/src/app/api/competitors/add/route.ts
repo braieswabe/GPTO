@@ -5,6 +5,8 @@ import { competitors } from '@gpto/database/src/schema';
 import { eq } from 'drizzle-orm';
 import { requireCompetitorSlot } from '@gpto/tiers';
 
+export const dynamic = 'force-dynamic';
+
 /**
  * POST /api/competitors/add
  * 

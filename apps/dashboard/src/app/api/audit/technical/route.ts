@@ -5,6 +5,8 @@ import { audits } from '@gpto/database/src/schema';
 import { runTechnicalAudit, generateRecommendations } from '@gpto/audit';
 import { getSiteTier } from '@gpto/tiers';
 
+export const dynamic = 'force-dynamic';
+
 /**
  * POST /api/audit/technical
  * 

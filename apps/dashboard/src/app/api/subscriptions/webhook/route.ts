@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { handleWebhook, verifyWebhookSignature } from '@gpto/billing';
 
+export const dynamic = 'force-dynamic';
+
 /**
  * POST /api/subscriptions/webhook
  * 

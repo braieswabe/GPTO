@@ -5,6 +5,8 @@ import { audits } from '@gpto/database/src/schema';
 import { eq } from 'drizzle-orm';
 import { generateScorecard, formatScorecardHTML } from '@gpto/reports';
 
+export const dynamic = 'force-dynamic';
+
 /**
  * GET /api/reports/scorecard
  * 

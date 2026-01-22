@@ -9,6 +9,8 @@ import { runTechnicalAudit } from '@gpto/audit';
 import { reviewContent } from '@gpto/audit';
 import { generateStructuredRecommendations } from '@gpto/audit';
 
+export const dynamic = 'force-dynamic';
+
 /**
  * POST /api/panthera-canon/generate
  * 

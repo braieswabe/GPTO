@@ -6,6 +6,8 @@ import { eq } from 'drizzle-orm';
 import { scrapeCompetitor, analyzeCompetitor } from '@gpto/competitors';
 import { generateSentimentMap, compareCompetitors } from '@gpto/competitors';
 
+export const dynamic = 'force-dynamic';
+
 /**
  * POST /api/competitors/analyze
  * 
