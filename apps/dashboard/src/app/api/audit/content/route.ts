@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { extractToken, verifyToken } from '@gpto/api';
-import { AuthenticationError } from '@gpto/api/src/errors';
+import { extractToken, verifyToken, AuthenticationError } from '@gpto/api';
 import { db } from '@gpto/database';
 import { audits } from '@gpto/database/src/schema';
 import { reviewContent } from '@gpto/audit';
