@@ -4,7 +4,8 @@ import { ExportButton } from '@/components/ExportButton';
 
 export default function SettingsPage() {
   return (
-    <div className="p-8 max-w-4xl mx-auto">
+    <div className="bg-white min-h-screen">
+      <div className="p-8 max-w-4xl mx-auto">
       <div className="mb-8">
         <h1 className="text-3xl font-bold text-gray-900">Settings</h1>
         <p className="mt-2 text-gray-600">Manage your account and application preferences</p>
@@ -57,6 +58,7 @@ export default function SettingsPage() {
             </p>
           </div>
         </section>
+      </div>
       </div>
     </div>
   );

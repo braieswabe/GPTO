@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import Link from 'next/link';
 import { ConfigEditor } from '@/components/ConfigEditor';
 import { DiffView } from '@/components/DiffView';
 
@@ -72,15 +73,36 @@ export default function UpdatePage() {
   };
 
   if (isLoading) {
-    return <div className="p-8">Loading...</div>;
+    return (
+      <div className="bg-white min-h-screen">
+        <div className="p-8 max-w-7xl mx-auto">
+          <div className="animate-pulse">
+            <div className="h-8 bg-gray-200 rounded w-1/4 mb-4"></div>
+            <div className="h-96 bg-gray-200 rounded"></div>
+          </div>
+        </div>
+      </div>
+    );
   }
 
   if (!siteData) {
-    return <div className="p-8">Site not found</div>;
+    return (
+      <div className="bg-white min-h-screen">
+        <div className="p-8 max-w-7xl mx-auto">
+          <div className="text-center">
+            <h2 className="text-2xl font-bold text-gray-900 mb-4">Site not found</h2>
+            <Link href="/sites" className="text-blue-600 hover:text-blue-700 hover:underline">
+              Back to Sites
+            </Link>
+          </div>
+        </div>
+      </div>
+    );
   }
 
   return (
-    <div className="p-8 max-w-7xl mx-auto">
+    <div className="bg-white min-h-screen">
+      <div className="p-8 max-w-7xl mx-auto">
       <div className="mb-6">
         <Link href={`/sites/${siteId}`} className="text-blue-600 hover:text-blue-700 text-sm mb-4 inline-block">
           ← Back to Site
@@ -126,6 +148,7 @@ export default function UpdatePage() {
           </p>
         </div>
       )}
+      </div>
     </div>
   );
 }

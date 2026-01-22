@@ -16,7 +16,7 @@ export function RoleBasedAccess({
   fallback,
 }: RoleBasedAccessProps) {
   if (!allowedRoles.includes(userRole)) {
-    return fallback || <div className="text-gray-500">Access denied</div>;
+    return fallback || <div className="text-gray-600">Access denied</div>;
   }
 
   return <>{children}</>;

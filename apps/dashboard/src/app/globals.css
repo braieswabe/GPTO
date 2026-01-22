@@ -21,6 +21,52 @@ body {
   background: rgb(var(--background-start-rgb));
 }
 
+/* Ensure proper text contrast - override dark mode for now to maintain light theme */
+@media (prefers-color-scheme: dark) {
+  body {
+    color: #111827; /* text-gray-900 */
+    background: #ffffff; /* bg-white */
+  }
+  
+  /* Force inputs to have white backgrounds and dark text */
+  input,
+  textarea,
+  select {
+    background-color: #ffffff !important;
+    color: #111827 !important;
+  }
+  
+  input::placeholder,
+  textarea::placeholder {
+    color: #6b7280 !important; /* text-gray-500 */
+  }
+}
+
+/* Global styles to ensure all form inputs have proper contrast */
+input[type="text"],
+input[type="email"],
+input[type="password"],
+input[type="number"],
+input[type="search"],
+input[type="tel"],
+input[type="url"],
+textarea,
+select {
+  background-color: #ffffff;
+  color: #111827;
+}
+
+input[type="text"]::placeholder,
+input[type="email"]::placeholder,
+input[type="password"]::placeholder,
+input[type="number"]::placeholder,
+input[type="search"]::placeholder,
+input[type="tel"]::placeholder,
+input[type="url"]::placeholder,
+textarea::placeholder {
+  color: #6b7280;
+}
+
 /* Custom scrollbar */
 ::-webkit-scrollbar {
   width: 8px;

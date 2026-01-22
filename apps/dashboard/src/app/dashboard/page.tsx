@@ -44,11 +44,25 @@ export default function DashboardPage() {
   });
 
   if (isLoading) {
-    return <div className="p-8">Loading dashboard...</div>;
+    return (
+      <div className="p-8 bg-white min-h-screen">
+        <div className="max-w-7xl mx-auto">
+          <div className="animate-pulse">
+            <div className="h-8 bg-gray-200 rounded w-1/4 mb-4"></div>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+              {[1, 2, 3, 4].map((i) => (
+                <div key={i} className="h-24 bg-gray-200 rounded"></div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
+    );
   }
 
   return (
-    <div className="p-8 max-w-7xl mx-auto">
+    <div className="bg-white min-h-screen">
+      <div className="p-8 max-w-7xl mx-auto">
       <div className="mb-8">
         <h1 className="text-3xl font-bold text-gray-900">Dashboard</h1>
         <p className="mt-2 text-gray-600">Overview of your GPTO Suite</p>
@@ -163,6 +177,7 @@ export default function DashboardPage() {
             <p className="text-xs text-gray-400 mt-1">Activity will appear here as you use the system</p>
           </div>
         </div>
+      </div>
       </div>
     </div>
   );

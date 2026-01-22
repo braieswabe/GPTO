@@ -38,7 +38,7 @@ export function ConfigEditor({ initialConfig, onSubmit, onCancel }: ConfigEditor
             setConfig(e.target.value);
             setError(null);
           }}
-          className="w-full h-96 font-mono text-sm p-4 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-none"
+          className="w-full h-96 font-mono text-sm p-4 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-none text-gray-900 placeholder-gray-500 bg-white"
           placeholder='{"panthera_blackbox": {...}}'
         />
         {error && (

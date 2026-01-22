@@ -13,12 +13,16 @@ interface DiffViewProps {
 
 export function DiffView({ changes }: DiffViewProps) {
   if (changes.length === 0) {
-    return <p className="text-gray-500">No changes</p>;
+    return (
+      <div className="text-center py-8">
+        <p className="text-gray-600">No changes</p>
+      </div>
+    );
   }
 
   return (
     <div className="space-y-2">
-      <h3 className="font-semibold">Changes ({changes.length})</h3>
+      <h3 className="font-semibold text-gray-900">Changes ({changes.length})</h3>
       <div className="space-y-1">
         {changes.map((change, index) => (
           <div
@@ -31,15 +35,15 @@ export function DiffView({ changes }: DiffViewProps) {
                 : 'bg-yellow-50 border-l-4 border-yellow-500'
             }`}
           >
-            <div className="font-mono font-semibold">{change.operation.toUpperCase()}</div>
-            <div className="text-gray-600">Path: {change.path}</div>
+            <div className="font-mono font-semibold text-gray-900">{change.operation.toUpperCase()}</div>
+            <div className="text-gray-700">Path: {change.path}</div>
             {change.old_value !== undefined && (
-              <div className="text-red-600">
+              <div className="text-red-700 font-medium">
                 Old: {JSON.stringify(change.old_value)}
               </div>
             )}
             {change.value !== undefined && (
-              <div className="text-green-600">
+              <div className="text-green-700 font-medium">
                 New: {JSON.stringify(change.value)}
               </div>
             )}

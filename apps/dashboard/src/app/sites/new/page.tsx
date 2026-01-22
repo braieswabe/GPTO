@@ -72,7 +72,8 @@ export default function NewSitePage() {
   };
 
   return (
-    <div className="p-8 max-w-3xl mx-auto">
+    <div className="bg-white min-h-screen">
+      <div className="p-8 max-w-3xl mx-auto">
       <div className="mb-6">
         <Link href="/sites" className="text-blue-600 hover:text-blue-700 text-sm mb-4 inline-block">
           ← Back to Sites
@@ -93,7 +94,7 @@ export default function NewSitePage() {
               value={domain}
               onChange={(e) => setDomain(e.target.value)}
               placeholder="example.com"
-              className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${
+              className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white text-gray-900 placeholder-gray-500 ${
                 errors.domain ? 'border-red-500' : 'border-gray-300'
               }`}
             />
@@ -111,7 +112,7 @@ export default function NewSitePage() {
               value={brand}
               onChange={(e) => setBrand(e.target.value)}
               placeholder="Your Brand"
-              className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${
+              className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white text-gray-900 placeholder-gray-500 ${
                 errors.brand ? 'border-red-500' : 'border-gray-300'
               }`}
             />
@@ -128,7 +129,7 @@ export default function NewSitePage() {
               value={verticals}
               onChange={(e) => setVerticals(e.target.value)}
               placeholder="recruitment, trucking, logistics"
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white text-gray-900 placeholder-gray-500"
             />
             <p className="mt-1 text-xs text-gray-500">Comma-separated list of industry verticals</p>
           </div>
@@ -143,7 +144,7 @@ export default function NewSitePage() {
               value={geo}
               onChange={(e) => setGeo(e.target.value)}
               placeholder="US, CA, UK"
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white text-gray-900 placeholder-gray-500"
             />
             <p className="mt-1 text-xs text-gray-500">Comma-separated list of country codes</p>
           </div>
@@ -175,6 +176,7 @@ export default function NewSitePage() {
           </Link>
         </div>
       </form>
+      </div>
     </div>
   );
 }
