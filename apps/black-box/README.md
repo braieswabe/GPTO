@@ -29,11 +29,37 @@ The runtime reads JSON configuration from your GPTO dashboard and automatically:
 
 ## Usage
 
-### Installation (npm, ESM-only)
+### Installation
+
+#### Using pnpm (Recommended)
+
+```bash
+# Install as a dependency
+pnpm add @careerdriver/black-box
+
+# Install as a dev dependency
+pnpm add -D @careerdriver/black-box
+
+# Install specific version
+pnpm add @careerdriver/black-box@1.0.1
+
+# Install latest version
+pnpm add @careerdriver/black-box@latest
+```
+
+#### Using npm
 
 ```bash
 npm install @careerdriver/black-box
 ```
+
+#### Using yarn
+
+```bash
+yarn add @careerdriver/black-box
+```
+
+### ESM Import Usage
 
 ```ts
 import { PantheraBlackBox } from '@careerdriver/black-box';
@@ -47,13 +73,29 @@ const blackBox = new PantheraBlackBox({
 await blackBox.init();
 ```
 
-### Installation (script tag, IIFE build for CDN)
+### Browser Usage (Script Tag / CDN)
+
+#### Via unpkg CDN
 
 Add the script tag to your HTML:
 
 ```html
 <script
   src="https://unpkg.com/@careerdriver/black-box@latest/dist/runtime.global.js"
+  data-config-url="https://api.example.com/api/sites/[site-id]/config"
+  data-telemetry-url="https://api.example.com/api/telemetry/events"
+  data-site-id="your-site-id"
+  async
+></script>
+```
+
+#### Via Local Installation
+
+If you've installed via pnpm/npm, reference the local file:
+
+```html
+<script
+  src="./node_modules/@careerdriver/black-box/dist/runtime.global.js"
   data-config-url="https://api.example.com/api/sites/[site-id]/config"
   data-telemetry-url="https://api.example.com/api/telemetry/events"
   data-site-id="your-site-id"

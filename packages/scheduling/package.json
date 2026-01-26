@@ -8,14 +8,14 @@
     "type-check": "tsc --noEmit"
   },
   "dependencies": {
-    "node-cron": "^3.0.3",
-    "@gpto/database": "workspace:*",
+    "@gpto/audit": "workspace:*",
     "@gpto/billing": "workspace:*",
-    "@gpto/audit": "workspace:*"
+    "@gpto/database": "workspace:*",
+    "node-cron": "^4.2.1"
   },
   "devDependencies": {
-    "@types/node": "^20.10.0",
+    "@types/node": "^25.0.10",
     "@types/node-cron": "^3.0.11",
-    "typescript": "^5.3.3"
+    "typescript": "^5.9.3"
   }
 }

@@ -1,6 +1,6 @@
 {
   "name": "@careerdriver/black-box",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "private": false,
   "type": "module",
   "files": [
@@ -26,10 +26,9 @@
     "type-check": "tsc --noEmit",
     "prepublishOnly": "pnpm build"
   },
-  "dependencies": {},
   "devDependencies": {
-    "@types/node": "^20.10.0",
-    "tsup": "^8.0.1",
-    "typescript": "^5.3.3"
+    "@types/node": "^25.0.10",
+    "tsup": "^8.5.1",
+    "typescript": "^5.9.3"
   }
 }

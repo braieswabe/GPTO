@@ -13,10 +13,10 @@
     "@gpto/database": "workspace:*",
     "@gpto/schemas": "workspace:*",
     "@gpto/shared": "workspace:*",
-    "jsonwebtoken": "^9.0.2"
+    "jsonwebtoken": "^9.0.3"
   },
   "devDependencies": {
-    "@types/jsonwebtoken": "^9.0.5",
-    "typescript": "^5.3.3"
+    "@types/jsonwebtoken": "^9.0.10",
+    "typescript": "^5.9.3"
   }
 }

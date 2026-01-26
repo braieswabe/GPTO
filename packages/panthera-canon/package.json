@@ -8,13 +8,13 @@
     "type-check": "tsc --noEmit"
   },
   "dependencies": {
-    "@gpto/database": "workspace:*",
-    "@gpto/audit": "workspace:*",
     "@gpto/api-lattice": "workspace:*",
+    "@gpto/audit": "workspace:*",
+    "@gpto/database": "workspace:*",
     "@gpto/schemas": "workspace:*"
   },
   "devDependencies": {
-    "@types/node": "^20.10.0",
-    "typescript": "^5.3.3"
+    "@types/node": "^25.0.10",
+    "typescript": "^5.9.3"
   }
 }
