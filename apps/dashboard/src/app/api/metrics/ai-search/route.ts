@@ -10,10 +10,21 @@ import { runTechnicalAudit } from '@gpto/audit';
  */
 export async function GET(request: Request) {
   try {
+    // #region agent log
+    fetch('http://127.0.0.1:7251/ingest/f2bef142-91a5-4d7a-be78-4c2383eb5638',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'api/metrics/ai-search/route.ts:11',message:'AI search metrics request started',data:{url:request.url,hasSearchParams:!!new URL(request.url).searchParams},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A'})}).catch(()=>{});
+    // #endregion
+    
     const { searchParams } = new URL(request.url);
     const siteId = searchParams.get('siteId');
 
+    // #region agent log
+    fetch('http://127.0.0.1:7251/ingest/f2bef142-91a5-4d7a-be78-4c2383eb5638',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'api/metrics/ai-search/route.ts:15',message:'SiteId extracted from query params',data:{siteId,allParams:Object.fromEntries(searchParams.entries())},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A'})}).catch(()=>{});
+    // #endregion
+
     if (!siteId) {
+      // #region agent log
+      fetch('http://127.0.0.1:7251/ingest/f2bef142-91a5-4d7a-be78-4c2383eb5638',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'api/metrics/ai-search/route.ts:19',message:'Missing siteId parameter',data:{url:request.url,searchParams:Object.fromEntries(searchParams.entries())},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'B'})}).catch(()=>{});
+      // #endregion
       return NextResponse.json(
         { error: 'siteId parameter is required' },
         { status: 400 }

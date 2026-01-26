@@ -21,19 +21,26 @@ async function fetchDashboardData() {
     // For now, return mock data for other metrics
     // In production, these would come from dedicated endpoints
     // Fetch AI search visibility score
+    // Note: This endpoint requires a siteId, so we'll calculate an aggregate if we have sites
     let aiSearchScore = 0;
-    try {
-      const aiSearchResponse = await fetch('/api/metrics/ai-search', {
-        headers: {
-          Authorization: `Bearer ${localStorage.getItem('token') || ''}`,
-        },
-      });
-      if (aiSearchResponse.ok) {
-        const aiSearchData = await aiSearchResponse.json();
-        aiSearchScore = aiSearchData.score || 0;
+    if (sitesCount > 0 && sitesData.data?.length > 0) {
+      try {
+        // Use the first site's ID for now, or calculate aggregate across all sites
+        const firstSiteId = sitesData.data[0]?.id;
+        if (firstSiteId) {
+          const aiSearchResponse = await fetch(`/api/metrics/ai-search?siteId=${firstSiteId}`, {
+            headers: {
+              Authorization: `Bearer ${localStorage.getItem('token') || ''}`,
+            },
+          });
+          if (aiSearchResponse.ok) {
+            const aiSearchData = await aiSearchResponse.json();
+            aiSearchScore = aiSearchData.score || 0;
+          }
+        }
+      } catch {
+        // Ignore errors, use default
       }
-    } catch {
-      // Ignore errors, use default
     }
 
     return {
