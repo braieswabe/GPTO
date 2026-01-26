@@ -12,10 +12,11 @@ import { NotFoundError } from '@gpto/api/src/errors';
  */
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const siteId = params.id;
+    // Await params in Next.js 16+
+    const { id: siteId } = await params;
 
     // #region agent log
     fetch('http://127.0.0.1:7251/ingest/f2bef142-91a5-4d7a-be78-4c2383eb5638',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'api/sites/[id]/config/route.ts:18',message:'Config fetch request received',data:{siteId,userAgent:request.headers.get('user-agent')?.substring(0,50)},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'C'})}).catch(()=>{});
