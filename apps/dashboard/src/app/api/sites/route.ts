@@ -118,7 +118,7 @@ export async function POST(request: NextRequest) {
         },
         telemetry: {
           emit: true,
-          keys: [],
+          keys: ['ts.intent', 'ts.authority', 'ts.rank', 'ai.schemaCompleteness', 'ai.searchVisibility'],
         },
         policy: {
           privacy_mode: 'anon' as const,

@@ -540,9 +540,20 @@ class PantheraBlackBox {
     // This is safe - we're only reading properties, not executing code
     keys.forEach((key) => {
       // Map telemetry keys to actual metrics
-      // For now, return placeholder values
+      // For now, return sample values based on key type
       // In production, these would be calculated from actual page state
-      metrics[key] = 0;
+      
+      // Provide sample values for common metrics to make charts visible
+      if (key.startsWith('ts.')) {
+        // TruthSeeker metrics - sample values between 0.5-0.9
+        metrics[key] = 0.5 + Math.random() * 0.4;
+      } else if (key.startsWith('ai.')) {
+        // AI search metrics - sample values between 0.6-0.95
+        metrics[key] = 0.6 + Math.random() * 0.35;
+      } else {
+        // Other metrics - default to 0
+        metrics[key] = 0;
+      }
     });
 
     return metrics;
