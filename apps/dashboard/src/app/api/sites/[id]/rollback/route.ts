@@ -13,9 +13,12 @@ import { rollbackToVersion } from '@gpto/api/src/updates/rollback';
  */
 export async function POST(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    // Await params in Next.js 16+
+    const { id: siteId } = await params;
+    
     // Authentication
     const authHeader = request.headers.get('authorization');
     const token = extractToken(authHeader ?? undefined);
@@ -25,7 +28,6 @@ export async function POST(
     }
 
     const payload = verifyToken(token);
-    const siteId = params.id;
 
     // Get site
     const [site] = await db.select().from(sites).where(eq(sites.id, siteId)).limit(1);
