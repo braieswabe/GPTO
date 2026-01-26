@@ -44,7 +44,7 @@ const tiers: Tier[] = [
     features: [
       'Everything in Silver',
       'Full Panthera Black Box installation',
-      'Dynamic schema and live AI SEO',
+      'Dynamic schema and live AI search optimization',
       '10-competitor + multi-market authority graph',
       'AI-driven link and reputation build',
       'Monthly telemetry insight report',

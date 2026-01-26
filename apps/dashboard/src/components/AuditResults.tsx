@@ -8,6 +8,7 @@ interface AuditResult {
     schema?: { score: number; issues: string[] };
     performance?: { score: number; issues: string[] };
     seo?: { score: number; issues: string[]; recommendations: string[] };
+    aiSearchOptimization?: { score: number; issues: string[]; recommendations: string[] };
     accessibility?: { score: number; issues: string[] };
     security?: { score: number; issues: string[] };
   };
@@ -51,8 +52,12 @@ export default function AuditResults({ audit }: AuditResultsProps) {
     <div className="space-y-6">
       {/* Category Scores */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        {results.seo && (
-          <ScoreCard title="SEO" score={results.seo.score} issues={results.seo.issues} />
+        {(results.aiSearchOptimization || results.seo) && (
+          <ScoreCard 
+            title="AI Search Optimization" 
+            score={(results.aiSearchOptimization || results.seo)!.score} 
+            issues={(results.aiSearchOptimization || results.seo)!.issues} 
+          />
         )}
         {results.performance && (
           <ScoreCard title="Performance" score={results.performance.score} issues={results.performance.issues} />
@@ -77,12 +82,12 @@ export default function AuditResults({ audit }: AuditResultsProps) {
         </div>
       )}
 
-      {/* SEO Recommendations */}
-      {results.seo?.recommendations && results.seo.recommendations.length > 0 && (
+      {/* AI Search Optimization Recommendations */}
+      {((results.aiSearchOptimization || results.seo)?.recommendations && (results.aiSearchOptimization || results.seo)!.recommendations.length > 0) && (
         <div className="bg-white rounded-lg shadow p-6">
-          <h3 className="text-xl font-bold mb-4">SEO Recommendations</h3>
+          <h3 className="text-xl font-bold mb-4">AI Search Optimization Recommendations</h3>
           <ul className="list-disc list-inside space-y-2">
-            {results.seo.recommendations.map((rec, index) => (
+            {(results.aiSearchOptimization || results.seo)!.recommendations.map((rec, index) => (
               <li key={index} className="text-gray-700">{rec}</li>
             ))}
           </ul>

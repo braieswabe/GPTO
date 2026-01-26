@@ -5,7 +5,8 @@ interface ScorecardData {
   categoryScores: {
     schema: number;
     performance: number;
-    seo: number;
+    seo?: number;
+    aiSearchOptimization?: number;
     accessibility: number;
     security: number;
     content?: number;
@@ -45,10 +46,13 @@ export default function Scorecard({ scorecard }: ScorecardProps) {
           <div className="space-y-4">
             {Object.entries(scorecard.categoryScores).map(([category, score]) => {
               if (score === undefined) return null;
+              // Skip seo if aiSearchOptimization exists
+              if (category === 'seo' && scorecard.categoryScores.aiSearchOptimization !== undefined) return null;
+              const displayLabel = category === 'aiSearchOptimization' ? 'AI Search Optimization' : category === 'seo' ? 'SEO' : category;
               return (
                 <div key={category}>
                   <div className="flex justify-between mb-1">
-                    <span className="font-medium capitalize">{category}</span>
+                    <span className="font-medium capitalize">{displayLabel}</span>
                     <span className="font-semibold">{score}/100</span>
                   </div>
                   <div className="w-full bg-gray-200 rounded-full h-3">

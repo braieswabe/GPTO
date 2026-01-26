@@ -2,16 +2,25 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 
 export function Navigation() {
   const pathname = usePathname();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [mounted, setMounted] = useState(false);
+  
+  // Always call hooks unconditionally (Rules of Hooks)
+  // Navigation is always inside AuthProvider, so useAuth is safe
   const { isAuthenticated, logout, user } = useAuth();
+  
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   const publicNavItems = [
     { href: '/', label: 'Home' },
+    { href: '/install', label: 'How to Install' },
     { href: '/docs', label: 'Documentation' },
   ];
 
@@ -56,7 +65,7 @@ export function Navigation() {
             </div>
           </div>
           <div className="flex items-center space-x-4">
-            {isAuthenticated ? (
+            {mounted && isAuthenticated ? (
               <>
                 <div className="hidden sm:block text-sm text-gray-600">
                   {user?.email}
@@ -68,13 +77,15 @@ export function Navigation() {
                   Logout
                 </button>
               </>
-            ) : (
+            ) : mounted ? (
               <Link
                 href="/login"
                 className="hidden sm:block px-4 py-2 text-sm font-medium text-blue-600 hover:text-blue-700"
               >
                 Login
               </Link>
+            ) : (
+              <div className="hidden sm:block w-16 h-8"></div>
             )}
             <button
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
@@ -127,7 +138,7 @@ export function Navigation() {
                 </Link>
               );
             })}
-            {isAuthenticated ? (
+            {mounted && isAuthenticated ? (
               <>
                 <div className="px-3 py-2 text-sm text-gray-600 border-t border-gray-200 mt-2 pt-2">
                   {user?.email}
@@ -142,7 +153,7 @@ export function Navigation() {
                   Logout
                 </button>
               </>
-            ) : (
+            ) : mounted ? (
               <Link
                 href="/login"
                 className="block pl-3 pr-4 py-2 border-l-4 border-transparent text-base font-medium text-blue-600 hover:bg-gray-50 hover:text-blue-700"
@@ -150,7 +161,7 @@ export function Navigation() {
               >
                 Login
               </Link>
-            )}
+            ) : null}
           </div>
         </div>
       )}

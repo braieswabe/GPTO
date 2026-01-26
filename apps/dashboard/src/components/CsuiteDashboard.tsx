@@ -14,6 +14,11 @@ interface CsuiteMetrics {
     trend: number;
     target: number;
   };
+  aiSearchVisibility: {
+    current: number;
+    trend: number;
+    target: number;
+  };
   competitorRank: {
     position: number;
     total: number;
@@ -47,6 +52,11 @@ export default function CsuiteDashboard() {
             trend: 3,
             target: 80,
           },
+          aiSearchVisibility: {
+            current: 72,
+            trend: 8,
+            target: 90,
+          },
           competitorRank: {
             position: 3,
             total: 10,
@@ -79,7 +89,7 @@ export default function CsuiteDashboard() {
   return (
     <div className="space-y-6">
       {/* Key Metrics Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
         <MetricCard
           title="Authority Score"
           value={metrics.authorityScore.current}
@@ -92,6 +102,13 @@ export default function CsuiteDashboard() {
           value={metrics.sentimentScore.current}
           target={metrics.sentimentScore.target}
           trend={metrics.sentimentScore.trend}
+          unit="/100"
+        />
+        <MetricCard
+          title="AI Search Visibility"
+          value={metrics.aiSearchVisibility.current}
+          target={metrics.aiSearchVisibility.target}
+          trend={metrics.aiSearchVisibility.trend}
           unit="/100"
         />
         <MetricCard

@@ -25,6 +25,7 @@ interface PantheraCanonPlanData {
   successMetrics: {
     authorityScore?: { current: number; target: number };
     seoScore?: { current: number; target: number };
+    aiSearchScore?: { current: number; target: number };
   };
 }
 
@@ -69,11 +70,11 @@ export default function PantheraCanonPlan({ plan }: PantheraCanonPlanProps) {
                   {plan.successMetrics.authorityScore.current} → {plan.successMetrics.authorityScore.target}
                 </div>
               </div>
-              {plan.successMetrics.seoScore && (
+              {(plan.successMetrics.aiSearchScore || plan.successMetrics.seoScore) && (
                 <div>
-                  <div className="text-sm text-gray-600">SEO Score</div>
+                  <div className="text-sm text-gray-600">{plan.successMetrics.aiSearchScore ? 'AI Search Score' : 'SEO Score'}</div>
                   <div className="text-lg font-semibold">
-                    {plan.successMetrics.seoScore.current} → {plan.successMetrics.seoScore.target}
+                    {(plan.successMetrics.aiSearchScore || plan.successMetrics.seoScore)!.current} → {(plan.successMetrics.aiSearchScore || plan.successMetrics.seoScore)!.target}
                   </div>
                 </div>
               )}

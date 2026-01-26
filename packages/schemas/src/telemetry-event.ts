@@ -26,6 +26,10 @@ export interface TelemetryEvent {
     entropy?: number;
     coherence?: number;
     drift?: number;
+    'ai.schemaCompleteness'?: number;
+    'ai.authoritySignals'?: number;
+    'ai.structuredDataQuality'?: number;
+    'ai.searchVisibility'?: number;
     [key: string]: number | undefined;
   };
   edges?: Array<{
@@ -68,6 +72,10 @@ export const telemetryEventSchema: JSONSchemaType<TelemetryEvent> = {
         entropy: { type: 'number', nullable: true, minimum: 0, maximum: 1 },
         coherence: { type: 'number', nullable: true, minimum: 0, maximum: 1 },
         drift: { type: 'number', nullable: true, minimum: 0, maximum: 1 },
+        'ai.schemaCompleteness': { type: 'number', nullable: true, minimum: 0, maximum: 1 },
+        'ai.authoritySignals': { type: 'number', nullable: true, minimum: 0, maximum: 1 },
+        'ai.structuredDataQuality': { type: 'number', nullable: true, minimum: 0, maximum: 1 },
+        'ai.searchVisibility': { type: 'number', nullable: true, minimum: 0, maximum: 1 },
       },
     },
     edges: {

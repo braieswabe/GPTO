@@ -33,24 +33,24 @@ export async function generateStructuredRecommendations(
     });
   }
 
-  if (technicalAudit.seo.score < 50) {
+  if (technicalAudit.aiSearchOptimization.score < 50) {
     recommendations.push({
       priority: 'critical',
-      category: 'SEO',
-      issue: 'Critical SEO issues detected',
-      recommendation: technicalAudit.seo.recommendations.join('; ') || 'Address missing SEO elements',
-      impact: 'High - Significant impact on search visibility',
+      category: 'AI Search Optimization',
+      issue: 'Critical AI Search Optimization issues detected',
+      recommendation: technicalAudit.aiSearchOptimization.recommendations.join('; ') || 'Address missing AI optimization elements',
+      impact: 'High - Significant impact on AI search visibility (ChatGPT, Perplexity, Claude)',
       effort: 'low',
     });
   }
 
-  technicalAudit.seo.issues.forEach(issue => {
+  technicalAudit.aiSearchOptimization.issues.forEach(issue => {
     recommendations.push({
-      priority: issue.includes('Missing') ? 'high' : 'medium',
-      category: 'SEO',
+      priority: issue.includes('Missing') || issue.includes('not found') || issue.includes('not configured') ? 'high' : 'medium',
+      category: 'AI Search Optimization',
       issue,
       recommendation: getRecommendationForIssue(issue),
-      impact: 'Medium - Affects search engine visibility',
+      impact: 'Medium - Affects AI search engine visibility and comprehension',
       effort: 'low',
     });
   });
@@ -86,7 +86,7 @@ export async function generateStructuredRecommendations(
           category: 'Content',
           issue: `Headline: ${issue}`,
           recommendation: review.headline.recommendations.join('; ') || 'Improve headline',
-          impact: 'Medium - Affects engagement and SEO',
+          impact: 'Medium - Affects engagement and AI search visibility',
           effort: 'low',
         });
       });

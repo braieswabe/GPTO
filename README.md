@@ -1,6 +1,25 @@
 # GPTO Suite
 
-A JSON Black Box runtime system that enables safe, declarative website updates, telemetry-driven optimization, and AI-powered orchestration through PantheraChat.
+**GPT Optimization Platform** - Optimize your website for AI search engines (ChatGPT, Perplexity, Claude, and other GPT-powered search tools). GPTO makes your website more discoverable, accessible, and visible in AI search results through structured data, authority signals, and AI-friendly configuration.
+
+A JSON Black Box runtime system that enables safe, declarative website updates, AI search optimization, telemetry-driven insights, and AI-powered orchestration through PantheraChat.
+
+## What is GPTO?
+
+**GPTO (GPT Optimization)** is the next evolution of SEO - optimized specifically for AI search engines. While traditional SEO focuses on ranking in Google/Bing, GPTO optimizes your website for:
+
+- **ChatGPT** - OpenAI's conversational search
+- **Perplexity** - AI-powered search engine
+- **Claude** - Anthropic's AI assistant
+- **Other GPT-powered search tools**
+
+### How GPTO Works
+
+1. **Structured Data Injection** - Injects JSON-LD schemas that AI models can easily parse and understand
+2. **Authority Signals** - Builds trust graphs and authority signals that AI models recognize
+3. **Factual Accuracy** - Ensures content is accurate and authoritative (AI models prioritize truth)
+4. **Telemetry Tracking** - Monitors AI search visibility and optimizes based on real AI behavior
+5. **Declarative Configuration** - JSON-based configuration that AI models can understand
 
 ## Architecture
 
@@ -34,17 +53,34 @@ A JSON Black Box runtime system that enables safe, declarative website updates, 
 GPTO/
 ├── apps/
 │   ├── dashboard/          # Next.js dashboard app
-│   └── black-box/          # Black Box runtime (CDN)
+│   └── black-box/          # Black Box runtime (CDN) - AI search optimization runtime
 ├── packages/
 │   ├── api/                # Shared API utilities
 │   ├── schemas/            # JSON schemas & validators
-│   ├── telemetry/          # Telemetry processing
+│   ├── telemetry/          # Telemetry processing (AI search visibility tracking)
 │   ├── governance/         # Approval & audit
 │   ├── servos/             # Servo modules
+│   │   ├── gpto/          # Core AI search optimization engine
+│   │   ├── agcc/          # AI content generation
+│   │   └── mibi/          # Market & Business Intelligence
 │   └── shared/             # Shared utilities/types
 └── database/
     └── migrations/         # Database migrations
 ```
+
+## Key Features
+
+### AI Search Optimization
+- **JSON-LD Schema Injection** - Structured data for AI model comprehension
+- **Authority Grove** - Trust signals and partner networks for AI recognition
+- **TruthSeeker** - Factual accuracy scoring for AI model prioritization
+- **Telemetry Analytics** - Track AI search visibility and performance
+
+### Safe Configuration Management
+- **No-code Updates** - Update websites via JSON configuration
+- **Governed Changes** - Approval workflows and audit trails
+- **Rollback Support** - Revert changes instantly
+- **Telemetry-Driven** - Optimize based on real AI search data
 
 ## Development
 

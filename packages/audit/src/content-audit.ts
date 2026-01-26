@@ -146,7 +146,7 @@ function analyzeHeadline(text: string): {
   if (text.length < 20) {
     issues.push(`Headline too short: ${text.length} characters`);
     score -= 20;
-    recommendations.push('Headlines should be 20-60 characters for optimal SEO');
+    recommendations.push('Headlines should be 20-60 characters for optimal AI search visibility');
   } else if (text.length > 60) {
     issues.push(`Headline too long: ${text.length} characters`);
     score -= 10;
