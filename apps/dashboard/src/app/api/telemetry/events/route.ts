@@ -15,6 +15,25 @@ export async function POST(request: NextRequest) {
   const origin = request.headers.get('origin');
   const allowedOrigins = process.env.ALLOWED_ORIGINS?.split(',') || ['*'];
   
+  // Build CORS headers - use specific origin when provided, not wildcard
+  const getCorsHeaders = () => {
+    const headers: Record<string, string> = {
+      'Access-Control-Allow-Methods': 'POST, OPTIONS',
+      'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+    };
+    
+    // Use specific origin if provided, otherwise allow all
+    if (origin) {
+      headers['Access-Control-Allow-Origin'] = origin;
+      // Only set credentials header if origin is specified (not wildcard)
+      headers['Access-Control-Allow-Credentials'] = 'true';
+    } else {
+      headers['Access-Control-Allow-Origin'] = '*';
+    }
+    
+    return headers;
+  };
+  
   try {
     // #region agent log
     fetch('http://127.0.0.1:7251/ingest/f2bef142-91a5-4d7a-be78-4c2383eb5638',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'api/telemetry/events/route.ts:12',message:'Telemetry POST request received',data:{origin,contentType:request.headers.get('content-type'),method:request.method},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A'})}).catch(()=>{});
@@ -59,11 +78,7 @@ export async function POST(request: NextRequest) {
         { error: 'Validation failed', errors },
         { 
           status: 400,
-          headers: {
-            'Access-Control-Allow-Origin': origin || '*',
-            'Access-Control-Allow-Methods': 'POST, OPTIONS',
-            'Access-Control-Allow-Headers': 'Content-Type',
-          },
+          headers: getCorsHeaders(),
         }
       );
     }
@@ -120,11 +135,7 @@ export async function POST(request: NextRequest) {
         },
         { 
           status: 200,
-          headers: {
-            'Access-Control-Allow-Origin': origin || '*',
-            'Access-Control-Allow-Methods': 'POST, OPTIONS',
-            'Access-Control-Allow-Headers': 'Content-Type',
-          },
+          headers: getCorsHeaders(),
         }
       );
     }
@@ -161,11 +172,7 @@ export async function POST(request: NextRequest) {
       },
       { 
         status: 201,
-        headers: {
-          'Access-Control-Allow-Origin': origin || '*',
-          'Access-Control-Allow-Methods': 'POST, OPTIONS',
-          'Access-Control-Allow-Headers': 'Content-Type',
-        },
+        headers: getCorsHeaders(),
       }
     );
   } catch (error) {
@@ -180,11 +187,7 @@ export async function POST(request: NextRequest) {
       { error: 'Failed to process telemetry event' },
       { 
         status: 500,
-        headers: {
-          'Access-Control-Allow-Origin': origin || '*',
-          'Access-Control-Allow-Methods': 'POST, OPTIONS',
-          'Access-Control-Allow-Headers': 'Content-Type',
-        },
+        headers: getCorsHeaders(),
       }
     );
   }
@@ -195,13 +198,23 @@ export async function POST(request: NextRequest) {
  */
 export async function OPTIONS(request: NextRequest) {
   const origin = request.headers.get('origin');
+  
+  const headers: Record<string, string> = {
+    'Access-Control-Allow-Methods': 'POST, OPTIONS',
+    'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+    'Access-Control-Max-Age': '86400', // 24 hours
+  };
+  
+  // Use specific origin if provided, otherwise allow all
+  if (origin) {
+    headers['Access-Control-Allow-Origin'] = origin;
+    headers['Access-Control-Allow-Credentials'] = 'true';
+  } else {
+    headers['Access-Control-Allow-Origin'] = '*';
+  }
+  
   return new NextResponse(null, {
     status: 200,
-    headers: {
-      'Access-Control-Allow-Origin': origin || '*',
-      'Access-Control-Allow-Methods': 'POST, OPTIONS',
-      'Access-Control-Allow-Headers': 'Content-Type',
-      'Access-Control-Max-Age': '86400', // 24 hours
-    },
+    headers,
   });
 }
