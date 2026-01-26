@@ -7,19 +7,54 @@ import { ProtectedRoute } from '@/components/ProtectedRoute';
 import { UserRole } from '@gpto/shared';
 import { useAuth } from '@/contexts/AuthContext';
 
-async function fetchDashboardData() {
+function getTimeAgo(date: Date): string {
+  const seconds = Math.floor((new Date().getTime() - date.getTime()) / 1000);
+  
+  if (seconds < 60) return 'Just now';
+  if (seconds < 3600) return `${Math.floor(seconds / 60)} minute${Math.floor(seconds / 60) !== 1 ? 's' : ''} ago`;
+  if (seconds < 86400) return `${Math.floor(seconds / 3600)} hour${Math.floor(seconds / 3600) !== 1 ? 's' : ''} ago`;
+  if (seconds < 604800) return `${Math.floor(seconds / 86400)} day${Math.floor(seconds / 86400) !== 1 ? 's' : ''} ago`;
+  
+  return date.toLocaleDateString();
+}
+
+interface DashboardData {
+  sites: number;
+  telemetryEvents: number;
+  updates: number;
+  authorityDelta: number;
+  aiSearchScore: number;
+  recentActivities: Array<{
+    type: 'telemetry' | 'update' | 'audit';
+    id: string;
+    siteId: string;
+    siteDomain?: string;
+    timestamp: string;
+    description: string;
+  }>;
+}
+
+async function fetchDashboardData(): Promise<DashboardData> {
   try {
+    const token = localStorage.getItem('token') || '';
+    const headers = {
+      Authorization: `Bearer ${token}`,
+    };
+
     // Fetch sites count
-    const sitesResponse = await fetch('/api/sites', {
-      headers: {
-        Authorization: `Bearer ${localStorage.getItem('token') || ''}`,
-      },
-    });
+    const sitesResponse = await fetch('/api/sites', { headers });
     const sitesData = sitesResponse.ok ? await sitesResponse.json() : { data: [] };
     const sitesCount = sitesData.data?.length || 0;
 
-    // For now, return mock data for other metrics
-    // In production, these would come from dedicated endpoints
+    // Fetch dashboard stats (telemetry events, updates, authority delta, recent activities)
+    const statsResponse = await fetch('/api/dashboard/stats', { headers });
+    const statsData = statsResponse.ok ? await statsResponse.json() : {
+      telemetryEvents: 0,
+      updates: 0,
+      authorityDelta: 0,
+      recentActivities: [],
+    };
+
     // Fetch AI search visibility score
     // Note: This endpoint requires a siteId, so we'll calculate an aggregate if we have sites
     let aiSearchScore = 0;
@@ -28,11 +63,7 @@ async function fetchDashboardData() {
         // Use the first site's ID for now, or calculate aggregate across all sites
         const firstSiteId = sitesData.data[0]?.id;
         if (firstSiteId) {
-          const aiSearchResponse = await fetch(`/api/metrics/ai-search?siteId=${firstSiteId}`, {
-            headers: {
-              Authorization: `Bearer ${localStorage.getItem('token') || ''}`,
-            },
-          });
+          const aiSearchResponse = await fetch(`/api/metrics/ai-search?siteId=${firstSiteId}`, { headers });
           if (aiSearchResponse.ok) {
             const aiSearchData = await aiSearchResponse.json();
             aiSearchScore = aiSearchData.score || 0;
@@ -45,19 +76,21 @@ async function fetchDashboardData() {
 
     return {
       sites: sitesCount,
+      telemetryEvents: statsData.telemetryEvents || 0,
+      updates: statsData.updates || 0,
+      authorityDelta: statsData.authorityDelta || 0,
+      aiSearchScore,
+      recentActivities: statsData.recentActivities || [],
+    };
+  } catch {
+    return {
+      sites: 0,
       telemetryEvents: 0,
       updates: 0,
       authorityDelta: 0,
-      aiSearchScore,
+      aiSearchScore: 0,
+      recentActivities: [],
     };
-  } catch {
-      return {
-        sites: 0,
-        telemetryEvents: 0,
-        updates: 0,
-        authorityDelta: 0,
-        aiSearchScore: 0,
-      };
   }
 }
 
@@ -67,6 +100,7 @@ function DashboardContent() {
   const { data, isLoading } = useQuery({
     queryKey: ['dashboard'],
     queryFn: fetchDashboardData,
+    refetchInterval: 30000, // Refetch every 30 seconds to keep data fresh
   });
 
   if (isLoading) {
@@ -142,7 +176,11 @@ function DashboardContent() {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm font-medium text-gray-600">Authority Δ</p>
-              <p className="text-3xl font-bold text-gray-900 mt-2">{data?.authorityDelta || 0}</p>
+              <p className="text-3xl font-bold text-gray-900 mt-2">
+                {data?.authorityDelta !== undefined && data.authorityDelta !== 0
+                  ? (data.authorityDelta > 0 ? '+' : '') + data.authorityDelta.toFixed(2)
+                  : '0'}
+              </p>
             </div>
             <div className="h-12 w-12 bg-yellow-100 rounded-lg flex items-center justify-center">
               <svg className="h-6 w-6 text-yellow-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -210,13 +248,64 @@ function DashboardContent() {
 
         <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
           <h2 className="text-xl font-semibold mb-4 text-gray-900">Recent Activity</h2>
-          <div className="text-center py-8">
-            <svg className="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-            </svg>
-            <p className="mt-4 text-sm text-gray-500">No recent activity</p>
-            <p className="text-xs text-gray-400 mt-1">Activity will appear here as you use the system</p>
-          </div>
+          {data?.recentActivities && data.recentActivities.length > 0 ? (
+            <div className="space-y-3 max-h-96 overflow-y-auto">
+              {data.recentActivities.map((activity) => {
+                const activityDate = new Date(activity.timestamp);
+                const timeAgo = getTimeAgo(activityDate);
+                
+                const activityIcon = {
+                  telemetry: (
+                    <svg className="h-5 w-5 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                    </svg>
+                  ),
+                  update: (
+                    <svg className="h-5 w-5 text-purple-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                    </svg>
+                  ),
+                  audit: (
+                    <svg className="h-5 w-5 text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                  ),
+                }[activity.type];
+
+                return (
+                  <div
+                    key={activity.id}
+                    className="flex items-start p-3 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
+                  >
+                    <div className="flex-shrink-0 mt-0.5 mr-3">
+                      {activityIcon}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium text-gray-900 truncate">
+                        {activity.description}
+                      </p>
+                      {activity.siteDomain && (
+                        <p className="text-xs text-gray-500 mt-1 truncate">
+                          {activity.siteDomain}
+                        </p>
+                      )}
+                      <p className="text-xs text-gray-400 mt-1">
+                        {timeAgo}
+                      </p>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          ) : (
+            <div className="text-center py-8">
+              <svg className="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              <p className="mt-4 text-sm text-gray-500">No recent activity</p>
+              <p className="text-xs text-gray-400 mt-1">Activity will appear here as you use the system</p>
+            </div>
+          )}
         </div>
       </div>
       </div>
