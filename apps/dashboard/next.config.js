@@ -48,6 +48,10 @@ const nextConfig = {
   // This works around sandbox file permission restrictions
   productionBrowserSourceMaps: false,
   
+  // Add empty turbopack config to silence Next.js 16 warning
+  // We're using webpack config, so we'll use --webpack flag
+  turbopack: {},
+  
   // Ensure path aliases work
   webpack: (config) => {
     config.resolve.alias = {
