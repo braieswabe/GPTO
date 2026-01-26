@@ -508,11 +508,10 @@ class PantheraBlackBox {
 
     try {
       // Use sendBeacon for reliability (doesn't block page unload)
+      // Note: sendBeacon requires Blob with Content-Type for JSON
       if (navigator.sendBeacon) {
-        navigator.sendBeacon(
-          this.telemetryUrl,
-          JSON.stringify(event)
-        );
+        const blob = new Blob([JSON.stringify(event)], { type: 'application/json' });
+        navigator.sendBeacon(this.telemetryUrl, blob);
       } else {
         // Fallback to fetch
         await fetch(this.telemetryUrl, {
