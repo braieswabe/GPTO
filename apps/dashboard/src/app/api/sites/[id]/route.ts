@@ -75,6 +75,10 @@ export async function GET(
       .where(eq(telemetryEvents.siteId, siteId))
       .orderBy(desc(telemetryEvents.timestamp))
       .limit(100);
+    
+    // #region agent log
+    fetch('http://127.0.0.1:7251/ingest/f2bef142-91a5-4d7a-be78-4c2383eb5638',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'api/sites/[id]/route.ts:77',message:'Telemetry fetched',data:{count:recentTelemetry.length,firstEvent:recentTelemetry[0]?{id:recentTelemetry[0].id,metrics:recentTelemetry[0].metrics,metricsKeys:recentTelemetry[0].metrics?Object.keys(recentTelemetry[0].metrics):[]}:null},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'H'})}).catch(()=>{});
+    // #endregion
 
     // #region agent log
     fetch('http://127.0.0.1:7251/ingest/f2bef142-91a5-4d7a-be78-4c2383eb5638',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'api/sites/[id]/route.ts:40',message:'Querying active config',data:{hasActiveConfig:!!activeConfig},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'G'})}).catch(()=>{});

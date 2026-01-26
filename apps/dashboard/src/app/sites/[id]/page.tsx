@@ -147,10 +147,18 @@ function SiteDetailPageContent() {
   }
 
   // Prepare telemetry data for chart
+  // #region agent log
+  fetch('http://127.0.0.1:7251/ingest/f2bef142-91a5-4d7a-be78-4c2383eb5638',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'sites/[id]/page.tsx:149',message:'Preparing chart data',data:{telemetryCount:data.telemetry.length,firstEventMetrics:data.telemetry[0]?.metrics,firstEventKeys:data.telemetry[0]?.metrics?Object.keys(data.telemetry[0].metrics):[]},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A'})}).catch(()=>{});
+  // #endregion
+  
   const chartData = data.telemetry.map((event) => ({
     timestamp: new Date(event.timestamp).toLocaleTimeString(),
     ...event.metrics,
   }));
+  
+  // #region agent log
+  fetch('http://127.0.0.1:7251/ingest/f2bef142-91a5-4d7a-be78-4c2383eb5638',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'sites/[id]/page.tsx:153',message:'Chart data prepared',data:{chartDataLength:chartData.length,firstChartData:chartData[0],hasTsIntent:chartData[0]?('ts.intent' in chartData[0]):false,hasTsAuthority:chartData[0]?('ts.authority' in chartData[0]):false,hasTsRank:chartData[0]?('ts.rank' in chartData[0]):false},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'B'})}).catch(()=>{});
+  // #endregion
 
   return (
     <div className="bg-white min-h-screen">
