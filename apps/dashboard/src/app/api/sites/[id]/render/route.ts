@@ -3,7 +3,7 @@ import { db } from '@gpto/database';
 import { sites, configVersions } from '@gpto/database/src/schema';
 import { eq, and } from 'drizzle-orm';
 import { NotFoundError } from '@gpto/api/src/errors';
-import { generateSchemaScriptTags } from '@gpto/servos/gpto/src/server-schema-generator';
+import { generateSchemaScriptTags } from '@gpto/servos-gpto';
 
 /**
  * GET /api/sites/[id]/render
