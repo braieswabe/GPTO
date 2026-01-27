@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Schema Injection Test</title>
+</head>
+<body>
+  <h1>Schema Injection Test</h1>
+  <p>Open browser console to see results</p>
+  
+  <!-- Load Black Box -->
+  <script src="https://gpto-dashboard.vercel.app/black-box.js"></script>
+  <script>
+    // Initialize Black Box
+    PantheraBlackBox.init({
+      configUrl: 'https://gpto-dashboard.vercel.app/api/sites/1a7fce1b-33ce-4852-ba46-31c11f210e4d/config',
+      telemetryUrl: 'https://gpto-dashboard.vercel.app/api/telemetry/events',
+      siteId: '1a7fce1b-33ce-4852-ba46-31c11f210e4d'
+    });
+    
+    // Wait a bit for initialization, then check
+    setTimeout(() => {
+      console.log('=== Schema Injection Test ===');
+      
+      // Check for Panthera schemas
+      const schemas = document.querySelectorAll('script[type="application/ld+json"][data-panthera]');
+      console.log(`Found ${schemas.length} Panthera schema(s)`);
+      
+      schemas.forEach((script, index) => {
+        try {
+          const data = JSON.parse(script.textContent);
+          console.log(`\nSchema ${index + 1}:`);
+          console.log('  @type:', data['@type']);
+          console.log('  name:', data.name);
+          console.log('  url:', data.url);
+          console.log('  sameAs:', data.sameAs);
+          console.log('  keywords:', data.keywords);
+          console.log('  Full schema:', data);
+        } catch (e) {
+          console.error(`Error parsing schema ${index + 1}:`, e);
+        }
+      });
+      
+      // Check if Organization schema exists
+      const orgSchemas = Array.from(schemas).filter(s => {
+        try {
+          const data = JSON.parse(s.textContent);
+          return data['@type'] === 'Organization';
+        } catch {
+          return false;
+        }
+      });
+      console.log(`\nOrganization schemas: ${orgSchemas.length}`);
+      
+      // Summary
+      if (schemas.length > 0) {
+        console.log('\n✅ SUCCESS: Schemas are being injected!');
+      } else {
+        console.log('\n❌ FAILED: No schemas found. Check for errors above.');
+      }
+    }, 2000);
+  </script>
+</body>
+</html>

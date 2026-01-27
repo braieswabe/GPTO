@@ -22,10 +22,13 @@ The Black Box runtime optimizes websites specifically for **AI search engines** 
 
 The runtime reads JSON configuration from your GPTO dashboard and automatically:
 
-- ✅ Injects JSON-LD schemas (Organization, Product, Service, FAQ, etc.)
+- ✅ Injects JSON-LD schemas (Organization, Product, Service, FAQ, etc.) **client-side**
+- ✅ **Server-side schema injection** available for external audit tool visibility
 - ✅ Builds authority signals through `sameAs` links and keywords
 - ✅ Sends telemetry to track AI search visibility
 - ✅ Ensures content is structured for AI model comprehension
+- ✅ **Automatically updates** schemas when configuration changes
+- ✅ **Telemetry-driven improvements** optimize schemas over time
 
 ## Usage
 
@@ -115,6 +118,65 @@ const blackBox = new PantheraBlackBox({
 await blackBox.init();
 ```
 
+### Server-Side Schema Injection (Recommended for External Audit Tools)
+
+For optimal visibility with external audit tools that don't execute JavaScript, you can automatically inject schemas server-side:
+
+#### Option 1: Schema Render Endpoint
+
+Fetch schemas and inject into your HTML template:
+
+```typescript
+// Next.js / React Server Component
+async function getSchemas(siteId: string) {
+  const response = await fetch(`https://gpto-dashboard.vercel.app/api/sites/${siteId}/render`);
+  return await response.text();
+}
+
+export default async function Page() {
+  const schemaScripts = await getSchemas('your-site-id');
+  
+  return (
+    <html>
+      <head>
+        <div dangerouslySetInnerHTML={{ __html: schemaScripts }} />
+      </head>
+      <body>{/* Your content */}</body>
+    </html>
+  );
+}
+```
+
+#### Option 2: Proxy Endpoint
+
+Use the proxy endpoint for external audit tools:
+
+```
+https://gpto-dashboard.vercel.app/api/sites/[site-id]/proxy?url=https://your-domain.com
+```
+
+This automatically serves your page with schemas injected server-side.
+
+#### Option 3: Server-Side Utility
+
+Import and use the schema generator directly:
+
+```typescript
+import { generateSchemaScriptTags, injectSchemasIntoHTML } from '@gpto/servos/gpto';
+
+// Generate schema script tags
+const schemaScripts = generateSchemaScriptTags(config.panthera_blackbox);
+
+// Or inject into existing HTML
+const htmlWithSchemas = injectSchemasIntoHTML(html, config.panthera_blackbox);
+```
+
+**Benefits:**
+- ✅ Schemas visible to external audit tools
+- ✅ Automatic updates when config changes
+- ✅ No manual HTML edits required
+- ✅ Works alongside client-side Black Box injection
+
 ## AI Search Optimization Features
 
 ### JSON-LD Schema Injection
@@ -151,6 +213,20 @@ Output:
 ## Deployment
 
 Deploy to Vercel CDN for global distribution. The file should be served with appropriate cache headers.
+
+## Version
+
+**Current Version:** `1.1.0`
+
+### What's New in v1.1.0
+
+- ✅ Automatic server-side schema injection
+- ✅ Zero manual HTML edits required
+- ✅ Automatic schema updates when config changes
+- ✅ External audit tool visibility
+- ✅ Multiple integration options
+
+See [CHANGELOG.md](../../CHANGELOG.md) for complete release notes.
 
 ## AI Search Optimization vs Traditional SEO
 

@@ -44,10 +44,48 @@ await blackBox.init();`}
             </div>
           </div>
 
+          <div className="border border-purple-200 rounded-lg p-6 bg-gradient-to-r from-purple-50 to-blue-50">
+            <h2 className="text-xl font-semibold text-gray-900 mb-2 flex items-center">
+              <span className="text-2xl mr-2">🚀</span>
+              Server-Side Schema Injection (Recommended)
+            </h2>
+            <p className="mt-2 text-gray-600 mb-4">
+              For optimal visibility with external audit tools, inject schemas server-side. Schemas automatically update when your configuration changes.
+            </p>
+            <div className="mt-4 space-y-3 text-sm text-gray-700">
+              <div>
+                <h3 className="text-base font-semibold text-gray-900 mb-2">Schema Render Endpoint</h3>
+                <div className="rounded-md bg-gray-100 p-3 font-mono text-xs text-gray-800 mb-2">
+                  GET /api/sites/YOUR-SITE-ID/render
+                </div>
+                <p className="text-gray-600 text-xs mb-3">
+                  Returns HTML script tags with schemas that can be injected into your HTML template.
+                </p>
+                <div className="rounded-md bg-gray-900 p-3 font-mono text-xs text-green-400 whitespace-pre-wrap">
+{`// Next.js / React Server Component
+const schemas = await fetch(
+  '/api/sites/YOUR-SITE-ID/render'
+);
+const schemaHTML = await schemas.text();
+
+// Inject into HTML
+<div dangerouslySetInnerHTML={{ 
+  __html: schemaHTML 
+}} />`}
+                </div>
+              </div>
+              <div className="mt-4 p-3 bg-green-50 border border-green-200 rounded">
+                <p className="text-xs text-green-800">
+                  ✅ <strong>Automatic Updates:</strong> Schemas are generated from your configuration and update automatically. No manual HTML edits needed!
+                </p>
+              </div>
+            </div>
+          </div>
+
           <div className="border border-gray-200 rounded-lg p-6">
             <h2 className="text-xl font-semibold text-gray-900">Configuration details</h2>
             <p className="mt-2 text-gray-600">
-              The Black Box pulls configuration from your dashboard and safely applies it to the page.
+              The Black Box pulls configuration from your dashboard and safely applies it to the page. Works alongside server-side schema injection for best results.
             </p>
             <div className="mt-4 grid gap-4 text-sm text-gray-700">
               <div>
@@ -86,6 +124,9 @@ await blackBox.init();`}
                 <p className="mt-1 text-gray-600">
                   Open the browser console for <span className="font-mono">[Panthera Black Box]</span> logs and
                   confirm your config endpoint returns JSON.
+                </p>
+                <p className="mt-2 text-gray-600">
+                  <strong>For server-side schemas:</strong> View page source and search for <span className="font-mono">application/ld+json</span> to verify schemas are in the HTML.
                 </p>
               </div>
             </div>

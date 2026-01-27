@@ -7,3 +7,4 @@ export * from './truthseeker';
 export * from './authority-grove';
 export * from './autofill';
 export * from './ads-monetisation';
+export * from './server-schema-generator';

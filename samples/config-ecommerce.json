@@ -1,0 +1,160 @@
+{
+  "panthera_blackbox": {
+    "version": "1.1.0",
+    "site": {
+      "domain": "shop.example.com",
+      "brand": "Example E-Commerce Store",
+      "verticals": [
+        "ecommerce",
+        "retail",
+        "shopping",
+        "online_store"
+      ],
+      "geo": ["US", "CA", "UK"]
+    },
+    "policy": {
+      "privacy_mode": "full",
+      "log_level": "detailed"
+    },
+    "telemetry": {
+      "emit": true,
+      "keys": [
+        "user.intent",
+        "user.product_category",
+        "user.purchase_intent",
+        "system.cart_abandonment",
+        "ai.schemaCompleteness",
+        "ai.searchVisibility"
+      ]
+    },
+    "autofill": {
+      "enabled": true,
+      "forms": [
+        {
+          "selector": "form#checkout-form",
+          "map": {
+            "email": "#email",
+            "phone": "#phone",
+            "shipping_address": "#shipping_address",
+            "billing_address": "#billing_address"
+          }
+        },
+        {
+          "selector": "form#newsletter-signup",
+          "map": {
+            "email": "#newsletter_email"
+          }
+        }
+      ]
+    },
+    "ads": {
+      "slots": [
+        {
+          "id": "header",
+          "contexts": ["product", "category"]
+        },
+        {
+          "id": "sidebar",
+          "contexts": ["blog", "article"]
+        },
+        {
+          "id": "footer",
+          "contexts": []
+        }
+      ]
+    },
+    "geo_nodes": {
+      "enabled": true,
+      "cities_max": 10,
+      "attractions_max": 5
+    },
+    "authority_grove": {
+      "node": {
+        "id": "https://shop.example.com",
+        "type": "Store",
+        "name": "Example E-Commerce Store",
+        "sameAs": [
+          "https://www.facebook.com/example-store",
+          "https://twitter.com/example-store"
+        ],
+        "keywords": [
+          "online shopping",
+          "ecommerce",
+          "retail",
+          "fashion",
+          "electronics"
+        ]
+      },
+      "partners": [
+        {
+          "id": "https://payment-processor.com",
+          "type": "PaymentService",
+          "weight": 0.8
+        },
+        {
+          "id": "https://shipping-provider.com",
+          "type": "ShippingService",
+          "weight": 0.7
+        }
+      ],
+      "trustEdges": [
+        {
+          "from": "https://shop.example.com",
+          "to": "https://payment-processor.com",
+          "weight": 0.9
+        }
+      ],
+      "corroboration": [
+        {
+          "source": "https://trusted-review-site.com",
+          "target": "https://shop.example.com",
+          "weight": 0.85
+        }
+      ]
+    },
+    "seo_enhancements": {
+      "meta_description": "Shop the latest products at Example E-Commerce Store. Free shipping on orders over $50. Secure checkout and easy returns.",
+      "canonical_enabled": true,
+      "structure_enhancements": {
+        "h1_text": "Example E-Commerce Store",
+        "enhance_title": true,
+        "title_template": "Example E-Commerce Store - {Product Name}",
+        "min_title_length": 40,
+        "inject_h1_if_missing": true
+      },
+      "content_depth": {
+        "enabled": true,
+        "min_h2_count": 4,
+        "h2_templates": [
+          "Product Features",
+          "Shipping Information",
+          "Return Policy",
+          "Customer Reviews"
+        ],
+        "default_content": "Discover quality products with fast shipping and excellent customer service.",
+        "content_templates": [
+          "Our products are carefully selected to meet the highest quality standards.",
+          "We offer free shipping on orders over $50 and easy returns within 30 days.",
+          "Our customer service team is available 24/7 to assist with any questions.",
+          "Join thousands of satisfied customers who trust us for their shopping needs."
+        ]
+      },
+      "content_enhancements": {
+        "enabled": true,
+        "who": "For online shoppers looking for quality products with excellent service.",
+        "what": "An e-commerce platform offering a wide range of products with secure checkout.",
+        "how": "Browse products, add to cart, and checkout securely with multiple payment options.",
+        "trust": "Secure payment processing, verified seller, and money-back guarantee."
+      }
+    },
+    "truthseeker": {
+      "weights": {
+        "intent_match": 0.35,
+        "anchor_match": 0.25,
+        "authority": 0.2,
+        "recency": 0.1,
+        "fairness": 0.1
+      }
+    }
+  }
+}

@@ -1,0 +1,157 @@
+{
+  "panthera_blackbox": {
+    "version": "1.1.0",
+    "site": {
+      "domain": "healthcare-clinic.example.com",
+      "brand": "Example Healthcare Clinic",
+      "verticals": [
+        "healthcare",
+        "medical",
+        "clinic",
+        "patient_services"
+      ],
+      "geo": ["US"]
+    },
+    "policy": {
+      "privacy_mode": "full",
+      "log_level": "detailed"
+    },
+    "telemetry": {
+      "emit": true,
+      "keys": [
+        "user.intent",
+        "user.service_category",
+        "appointment.wait_time",
+        "appointment.booking_rate",
+        "system.availability",
+        "ai.schemaCompleteness",
+        "ai.searchVisibility"
+      ]
+    },
+    "autofill": {
+      "enabled": true,
+      "forms": [
+        {
+          "selector": "form#appointment-form",
+          "map": {
+            "patient_name": "#patient_name",
+            "date_of_birth": "#dob",
+            "phone": "#phone",
+            "email": "#email",
+            "insurance_provider": "#insurance",
+            "reason_for_visit": "#reason"
+          }
+        },
+        {
+          "selector": "form#contact-form",
+          "map": {
+            "name": "#name",
+            "email": "#email",
+            "message": "#message"
+          }
+        }
+      ]
+    },
+    "ads": {
+      "slots": [
+        {
+          "id": "sidebar",
+          "contexts": ["blog", "article"]
+        }
+      ]
+    },
+    "geo_nodes": {
+      "enabled": true,
+      "cities_max": 5
+    },
+    "authority_grove": {
+      "node": {
+        "id": "https://healthcare-clinic.example.com",
+        "type": "MedicalOrganization",
+        "name": "Example Healthcare Clinic",
+        "sameAs": [
+          "https://www.healthgrades.com/example-clinic"
+        ],
+        "keywords": [
+          "healthcare",
+          "medical clinic",
+          "primary care",
+          "patient services",
+          "health services"
+        ]
+      },
+      "partners": [
+        {
+          "id": "https://insurance-provider.com",
+          "type": "InsuranceCompany",
+          "weight": 0.8
+        },
+        {
+          "id": "https://hospital-network.com",
+          "type": "Hospital",
+          "weight": 0.9
+        }
+      ],
+      "trustEdges": [
+        {
+          "from": "https://healthcare-clinic.example.com",
+          "to": "https://hospital-network.com",
+          "weight": 0.95
+        }
+      ],
+      "corroboration": [
+        {
+          "source": "https://medical-board.org",
+          "target": "https://healthcare-clinic.example.com",
+          "weight": 0.9
+        }
+      ]
+    },
+    "seo_enhancements": {
+      "meta_description": "Example Healthcare Clinic provides comprehensive medical care with experienced doctors and modern facilities. Book your appointment online today.",
+      "canonical_enabled": true,
+      "structure_enhancements": {
+        "h1_text": "Example Healthcare Clinic",
+        "enhance_title": true,
+        "title_template": "Example Healthcare Clinic - {Service Name}",
+        "min_title_length": 40,
+        "inject_h1_if_missing": true
+      },
+      "content_depth": {
+        "enabled": true,
+        "min_h2_count": 5,
+        "h2_templates": [
+          "Our Services",
+          "Our Medical Team",
+          "Patient Information",
+          "Insurance and Billing",
+          "Contact Us"
+        ],
+        "default_content": "Comprehensive healthcare services provided by experienced medical professionals.",
+        "content_templates": [
+          "We offer a wide range of medical services including primary care, preventive medicine, and specialized treatments.",
+          "Our team of board-certified physicians and healthcare professionals are dedicated to providing quality care.",
+          "We accept most major insurance plans and offer flexible payment options for our patients.",
+          "Schedule your appointment online or call our office during business hours.",
+          "We are committed to providing compassionate and personalized healthcare services."
+        ]
+      },
+      "content_enhancements": {
+        "enabled": true,
+        "who": "For patients seeking quality healthcare services and medical care.",
+        "what": "A comprehensive healthcare clinic offering primary care and specialized medical services.",
+        "how": "Schedule appointments online, visit our clinic, and receive personalized medical care from experienced professionals.",
+        "trust": "Licensed medical professionals, accredited facility, and HIPAA-compliant patient care."
+      }
+    },
+    "truthseeker": {
+      "weights": {
+        "intent_match": 0.3,
+        "anchor_match": 0.2,
+        "authority": 0.3,
+        "recency": 0.1,
+        "fairness": 0.1
+      }
+    }
+  }
+}

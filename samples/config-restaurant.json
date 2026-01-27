@@ -1,0 +1,144 @@
+{
+  "panthera_blackbox": {
+    "version": "1.1.0",
+    "site": {
+      "domain": "restaurant.example.com",
+      "brand": "Example Restaurant",
+      "verticals": [
+        "restaurant",
+        "dining",
+        "food_service",
+        "hospitality"
+      ],
+      "geo": ["US"]
+    },
+    "policy": {
+      "privacy_mode": "anon",
+      "log_level": "detailed"
+    },
+    "telemetry": {
+      "emit": true,
+      "keys": [
+        "user.intent",
+        "reservation.booking_rate",
+        "menu.view_count",
+        "review.rating",
+        "ai.schemaCompleteness",
+        "ai.searchVisibility"
+      ]
+    },
+    "autofill": {
+      "enabled": true,
+      "forms": [
+        {
+          "selector": "form#reservation-form",
+          "map": {
+            "name": "#guest_name",
+            "email": "#email",
+            "phone": "#phone",
+            "party_size": "#party_size",
+            "date": "#reservation_date",
+            "time": "#reservation_time",
+            "special_requests": "#special_requests"
+          }
+        }
+      ]
+    },
+    "ads": {
+      "slots": [
+        {
+          "id": "sidebar",
+          "contexts": []
+        }
+      ]
+    },
+    "geo_nodes": {
+      "enabled": true,
+      "cities_max": 3,
+      "attractions_max": 5,
+      "templates": {
+        "city": "Restaurants in {city}",
+        "attraction": "Dining near {attraction}"
+      }
+    },
+    "authority_grove": {
+      "node": {
+        "id": "https://restaurant.example.com",
+        "type": "Restaurant",
+        "name": "Example Restaurant",
+        "sameAs": [
+          "https://www.yelp.com/biz/example-restaurant",
+          "https://www.tripadvisor.com/restaurant-example"
+        ],
+        "keywords": [
+          "restaurant",
+          "fine dining",
+          "italian cuisine",
+          "dinner",
+          "lunch"
+        ]
+      },
+      "partners": [
+        {
+          "id": "https://delivery-platform.com",
+          "type": "FoodDeliveryService",
+          "weight": 0.7
+        }
+      ],
+      "trustEdges": [],
+      "corroboration": [
+        {
+          "source": "https://food-critic-site.com",
+          "target": "https://restaurant.example.com",
+          "weight": 0.8
+        }
+      ]
+    },
+    "seo_enhancements": {
+      "meta_description": "Example Restaurant offers authentic Italian cuisine in a warm, welcoming atmosphere. Make a reservation or order online for delivery.",
+      "canonical_enabled": true,
+      "structure_enhancements": {
+        "h1_text": "Example Restaurant",
+        "enhance_title": true,
+        "title_template": "Example Restaurant - {Dish Name}",
+        "min_title_length": 40,
+        "inject_h1_if_missing": true
+      },
+      "content_depth": {
+        "enabled": true,
+        "min_h2_count": 5,
+        "h2_templates": [
+          "Our Menu",
+          "About Our Restaurant",
+          "Reservations",
+          "Location & Hours",
+          "Contact Us"
+        ],
+        "default_content": "Experience authentic Italian cuisine in a welcoming atmosphere.",
+        "content_templates": [
+          "Our menu features traditional Italian dishes made with fresh, locally sourced ingredients.",
+          "We have been serving the community for over 20 years with a commitment to quality and hospitality.",
+          "Reservations are recommended, especially on weekends. Book online or call us directly.",
+          "Located in the heart of downtown, we offer both indoor and outdoor dining options.",
+          "Join us for lunch, dinner, or special events. We also offer catering services."
+        ]
+      },
+      "content_enhancements": {
+        "enabled": true,
+        "who": "For food lovers seeking authentic Italian cuisine and a memorable dining experience.",
+        "what": "A family-owned Italian restaurant serving traditional dishes in a warm atmosphere.",
+        "how": "Browse our menu, make a reservation online, and enjoy a delicious meal in our restaurant or order for delivery.",
+        "trust": "Family-owned for over 20 years, highly rated by customers, and committed to quality ingredients."
+      }
+    },
+    "truthseeker": {
+      "weights": {
+        "intent_match": 0.35,
+        "anchor_match": 0.25,
+        "authority": 0.15,
+        "recency": 0.15,
+        "fairness": 0.1
+      }
+    }
+  }
+}

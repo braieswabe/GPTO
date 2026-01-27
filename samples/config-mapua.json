@@ -1,0 +1,134 @@
+{
+  "panthera_blackbox": {
+    "version": "1.1.0",
+    "site": {
+      "domain": "mapua-queuing-system.vercel.app",
+      "brand": "Mapua University Queueing System",
+      "verticals": [
+        "education",
+        "students",
+        "university",
+        "queue_management",
+        "campus_services",
+        "healthcare"
+      ],
+      "geo": ["PH"]
+    },
+    "policy": {
+      "privacy_mode": "anon",
+      "log_level": "detailed"
+    },
+    "telemetry": {
+      "emit": true,
+      "keys": [
+        "queue.wait_time",
+        "queue.service_time",
+        "queue.drop_off_rate",
+        "queue.peak_hours",
+        "user.intent",
+        "user.service_category",
+        "system.availability",
+        "ai.schemaCompleteness",
+        "ai.searchVisibility"
+      ]
+    },
+    "autofill": {
+      "enabled": true,
+      "forms": [
+        {
+          "selector": "form",
+          "map": {
+            "student_id": "#student_id",
+            "service_type": "#service_type",
+            "department": "#department",
+            "appointment_reason": "#appointment_reason"
+          }
+        }
+      ]
+    },
+    "ads": {
+      "slots": [
+        {
+          "id": "sidebar",
+          "contexts": []
+        }
+      ]
+    },
+    "geo_nodes": {
+      "enabled": true
+    },
+    "authority_grove": {
+      "node": {
+        "id": "https://mapua-queuing-system.vercel.app",
+        "type": "EducationalOrganization",
+        "name": "Mapua University Queueing System",
+        "sameAs": ["https://www.mapua.edu.ph"],
+        "keywords": [
+          "Mapua University",
+          "student queueing system",
+          "campus services",
+          "online queue",
+          "registrar queue",
+          "university healthcare queue"
+        ]
+      },
+      "partners": [
+        {
+          "id": "https://www.mapua.edu.ph",
+          "type": "EducationalOrganization",
+          "weight": 0.9
+        }
+      ],
+      "trustEdges": [],
+      "corroboration": []
+    },
+    "seo_enhancements": {
+      "meta_description": "Official Mapua University Queueing System for students, faculty, and campus services. Manage queues, reduce wait times, and streamline university transactions online.",
+      "canonical_enabled": true,
+      "structure_enhancements": {
+        "h1_text": "Mapua University Queueing System",
+        "enhance_title": true,
+        "title_template": "Mapua University Queueing System - Student and Campus Services",
+        "min_title_length": 40,
+        "inject_h1_if_missing": true
+      },
+      "content_depth": {
+        "enabled": true,
+        "min_h2_count": 6,
+        "h2_templates": [
+          "About the Mapua Queueing System",
+          "Who Can Use This System",
+          "Supported Campus Services",
+          "How the Queueing Process Works",
+          "Benefits for Students and Staff",
+          "Getting Started"
+        ],
+        "default_content": "This section provides structured information to help students and AI-powered search engines understand how Mapua University's queueing system works.",
+        "content_templates": [
+          "The Mapua University Queueing System is a centralized platform designed to manage student and campus service queues efficiently.",
+          "The system is used by students, faculty, and administrative offices to streamline in-person and digital service requests.",
+          "Supported services include registrar transactions, admissions, cashier services, clinic visits, and other campus offices.",
+          "Users select a service, receive a queue number, and get real-time updates on wait time and service status.",
+          "The platform reduces overcrowding, improves service efficiency, and enhances the overall campus experience.",
+          "Getting started is simple—access the system online, select your service, and wait smarter."
+        ]
+      },
+      "content_enhancements": {
+        "enabled": true,
+        "who": "Designed for Mapua University students, faculty, and campus service offices.",
+        "what": "A digital queueing system that organizes campus service requests and reduces waiting time.",
+        "how": "Users select services online, receive queue numbers, and track their position in real time.",
+        "trust": "Operates under strict privacy standards and institutional data protection policies."
+      }
+    },
+    "truthseeker": {
+      "weights": {
+        "intent_match": 0.3,
+        "anchor_match": 0.2,
+        "authority": 0.25,
+        "recency": 0.15,
+        "fairness": 0.1
+      }
+    }
+  }
+}

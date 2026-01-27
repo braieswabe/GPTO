@@ -161,7 +161,33 @@ export default function InstallPage() {
               </div>
 
               <div className="bg-gray-50 border border-gray-200 rounded-lg p-6">
-                <h3 className="text-lg font-semibold text-gray-900 mb-4">Step 3: Verify Installation</h3>
+                <h3 className="text-lg font-semibold text-gray-900 mb-4">Step 3: (Optional) Server-Side Schema Injection</h3>
+                <p className="text-gray-600 mb-4">
+                  For optimal visibility with external audit tools, inject schemas server-side. This makes schemas visible in the initial HTML response:
+                </p>
+                <div className="bg-gray-900 rounded-lg p-4 overflow-x-auto mb-4">
+                  <pre className="text-green-400 text-sm">
+{`// Fetch schemas automatically
+const schemas = await fetch(
+  'https://gpto-dashboard.vercel.app/api/sites/YOUR-SITE-ID/render'
+);
+const schemaHTML = await schemas.text();
+
+// Inject into your HTML template
+<head>
+  {schemaHTML}
+</head>`}
+                  </pre>
+                </div>
+                <div className="mt-4 p-4 bg-blue-50 border border-blue-200 rounded">
+                  <p className="text-sm text-blue-800">
+                    <strong>💡 Tip:</strong> Schemas automatically update when your configuration changes. No manual HTML edits needed!
+                  </p>
+                </div>
+              </div>
+
+              <div className="bg-gray-50 border border-gray-200 rounded-lg p-6">
+                <h3 className="text-lg font-semibold text-gray-900 mb-4">Step 4: Verify Installation</h3>
                 <p className="text-gray-600 mb-4">
                   Open your website in a browser and check the browser console. You should see:
                 </p>
@@ -175,6 +201,11 @@ export default function InstallPage() {
                 <p className="text-gray-600 mt-4">
                   You can also check the page source to verify JSON-LD schemas are present in the <code className="bg-gray-200 px-1 rounded">&lt;head&gt;</code> section.
                 </p>
+                <div className="mt-4 p-4 bg-green-50 border border-green-200 rounded">
+                  <p className="text-sm text-green-800">
+                    <strong>✅ Automatic Updates:</strong> Schemas are automatically generated from your configuration and update when you change settings. No manual HTML edits required!
+                  </p>
+                </div>
               </div>
             </div>
           )}
@@ -247,6 +278,80 @@ await blackBox.init();`}
           )}
         </div>
 
+        {/* Server-Side Schema Injection */}
+        <div className="mb-12 bg-gradient-to-r from-blue-50 to-purple-50 border border-blue-200 rounded-lg p-8">
+          <h2 className="text-2xl font-bold text-gray-900 mb-4">🚀 Automatic Server-Side Schema Injection</h2>
+          <p className="text-gray-700 mb-6">
+            GPTO automatically generates and injects schemas server-side, making them visible to external audit tools without requiring manual HTML edits. Schemas update automatically when your configuration changes.
+          </p>
+          
+          <div className="grid gap-6 md:grid-cols-2 mb-6">
+            <div className="bg-white rounded-lg p-6 border border-blue-200">
+              <h3 className="text-lg font-semibold text-gray-900 mb-3 flex items-center">
+                <span className="text-2xl mr-2">📡</span>
+                Schema Render Endpoint
+              </h3>
+              <p className="text-gray-600 text-sm mb-3">
+                Fetch schemas and inject into your HTML template:
+              </p>
+              <div className="bg-gray-900 rounded p-3 overflow-x-auto">
+                <pre className="text-green-400 text-xs">
+{`const schemas = await fetch(
+  '/api/sites/[id]/render'
+);
+const schemaHTML = await schemas.text();`}
+                </pre>
+              </div>
+            </div>
+
+            <div className="bg-white rounded-lg p-6 border border-blue-200">
+              <h3 className="text-lg font-semibold text-gray-900 mb-3 flex items-center">
+                <span className="text-2xl mr-2">🔄</span>
+                Automatic Updates
+              </h3>
+              <ul className="space-y-2 text-gray-600 text-sm">
+                <li>✅ Schemas update when config changes</li>
+                <li>✅ No manual HTML edits needed</li>
+                <li>✅ Telemetry-driven improvements</li>
+                <li>✅ Visible to external audit tools</li>
+              </ul>
+            </div>
+          </div>
+
+          <div className="bg-white rounded-lg p-6 border border-blue-200">
+            <h3 className="text-lg font-semibold text-gray-900 mb-3">Integration Examples</h3>
+            <div className="space-y-4">
+              <div>
+                <p className="text-sm font-medium text-gray-700 mb-2">Next.js / React:</p>
+                <div className="bg-gray-900 rounded p-3 overflow-x-auto">
+                  <pre className="text-green-400 text-xs">
+{`const schemaScripts = await fetch(
+  '/api/sites/[id]/render'
+).then(r => r.text());
+
+<div dangerouslySetInnerHTML={{ 
+  __html: schemaScripts 
+}} />`}
+                  </pre>
+                </div>
+              </div>
+              <div>
+                <p className="text-sm font-medium text-gray-700 mb-2">PHP / Server-Side:</p>
+                <div className="bg-gray-900 rounded p-3 overflow-x-auto">
+                  <pre className="text-green-400 text-xs">
+{`<?php
+$schemas = file_get_contents(
+  'https://gpto-dashboard.vercel.app/api/sites/[id]/render'
+);
+echo $schemas;
+?>`}
+                  </pre>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
         {/* Configuration Guide */}
         <div className="mb-12">
           <h2 className="text-2xl font-bold text-gray-900 mb-6">Configuration Guide</h2>
@@ -261,6 +366,7 @@ await blackBox.init();`}
                 <li>• Add your site domain in the dashboard</li>
                 <li>• Copy your Site ID</li>
                 <li>• Install Black Box using your preferred method</li>
+                <li>• (Optional) Add server-side schema injection</li>
                 <li>• Verify schemas are being injected</li>
               </ul>
             </div>

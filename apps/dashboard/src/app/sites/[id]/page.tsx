@@ -9,6 +9,7 @@ import { ProtectedRoute } from '@/components/ProtectedRoute';
 import { useState, useEffect } from 'react';
 
 function InstallationInstructions({ siteId }: { siteId: string }) {
+  const dashboardUrl = typeof window !== 'undefined' ? window.location.origin : 'https://gpto-dashboard.vercel.app';
   const [origin, setOrigin] = useState('https://your-dashboard-url');
   
   useEffect(() => {
@@ -30,31 +31,82 @@ function InstallationInstructions({ siteId }: { siteId: string }) {
     alert('Script copied to clipboard!');
   };
 
+  const schemaRenderUrl = `${origin}/api/sites/${siteId}/render`;
+  const proxyUrl = `${origin}/api/sites/${siteId}/proxy?url=https://your-domain.com`;
+
   return (
-    <div className="bg-blue-50 border border-blue-200 rounded-lg p-6 mb-8">
-      <h2 className="text-lg font-semibold text-blue-900 mb-3 flex items-center">
-        <svg className="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-        </svg>
-        Install Black Box Script
-      </h2>
-      <p className="text-sm text-blue-800 mb-4">
-        Add this script tag to your website to enable Black Box and telemetry:
-      </p>
-      <div className="bg-white p-4 rounded border border-blue-200 mb-4">
-        <pre className="text-xs font-mono text-gray-800 overflow-x-auto whitespace-pre-wrap break-words">
+    <div className="space-y-6 mb-8">
+      {/* Client-Side Script Tag */}
+      <div className="bg-blue-50 border border-blue-200 rounded-lg p-6">
+        <h2 className="text-lg font-semibold text-blue-900 mb-3 flex items-center">
+          <svg className="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+          Step 1: Install Black Box Script (Client-Side)
+        </h2>
+        <p className="text-sm text-blue-800 mb-4">
+          Add this script tag to your website to enable Black Box and telemetry:
+        </p>
+        <div className="bg-white p-4 rounded border border-blue-200 mb-4">
+          <pre className="text-xs font-mono text-gray-800 overflow-x-auto whitespace-pre-wrap break-words">
 {scriptTag}
-        </pre>
+          </pre>
+        </div>
+        <button
+          onClick={handleCopy}
+          className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm font-medium transition-colors"
+        >
+          Copy Script Tag
+        </button>
       </div>
-      <button
-        onClick={handleCopy}
-        className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm font-medium transition-colors"
-      >
-        Copy Script Tag
-      </button>
-      <p className="text-xs text-blue-700 mt-3">
-        💡 <strong>Note:</strong> Make sure to build the Black Box script first: <code className="bg-blue-100 px-1 rounded">pnpm --filter @gpto/black-box build</code>
-      </p>
+
+      {/* Server-Side Schema Injection */}
+      <div className="bg-gradient-to-r from-purple-50 to-blue-50 border border-purple-200 rounded-lg p-6">
+        <h2 className="text-lg font-semibold text-purple-900 mb-3 flex items-center">
+          <span className="text-xl mr-2">🚀</span>
+          Step 2: (Recommended) Add Server-Side Schema Injection
+        </h2>
+        <p className="text-sm text-purple-800 mb-4">
+          For optimal visibility with external audit tools, inject schemas server-side. Schemas update automatically when your configuration changes.
+        </p>
+        
+        <div className="space-y-4">
+          <div className="bg-white rounded-lg p-4 border border-purple-200">
+            <h3 className="text-sm font-semibold text-gray-900 mb-2">Option A: Schema Render Endpoint</h3>
+            <p className="text-xs text-gray-600 mb-2">Fetch schemas and inject into your HTML template:</p>
+            <div className="bg-gray-900 rounded p-3 mb-2">
+              <pre className="text-green-400 text-xs overflow-x-auto">
+{`// Next.js / React
+const schemas = await fetch('${schemaRenderUrl}');
+const schemaHTML = await schemas.text();
+
+// Inject into HTML
+<div dangerouslySetInnerHTML={{ __html: schemaHTML }} />`}
+              </pre>
+            </div>
+            <div className="bg-gray-100 rounded p-2">
+              <code className="text-xs text-gray-700">{schemaRenderUrl}</code>
+            </div>
+          </div>
+
+          <div className="bg-white rounded-lg p-4 border border-purple-200">
+            <h3 className="text-sm font-semibold text-gray-900 mb-2">Option B: Proxy Endpoint</h3>
+            <p className="text-xs text-gray-600 mb-2">Use for external audit tools or testing:</p>
+            <div className="bg-gray-100 rounded p-2 mb-2">
+              <code className="text-xs text-gray-700 break-all">{proxyUrl}</code>
+            </div>
+            <p className="text-xs text-gray-600">
+              Replace <code className="bg-gray-200 px-1 rounded">your-domain.com</code> with your actual domain.
+            </p>
+          </div>
+        </div>
+
+        <div className="mt-4 p-3 bg-green-50 border border-green-200 rounded">
+          <p className="text-xs text-green-800">
+            ✅ <strong>Automatic Updates:</strong> Schemas are generated from your configuration and update automatically. No manual HTML edits needed!
+          </p>
+        </div>
+      </div>
     </div>
   );
 }
