@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { extractToken, verifyToken, AuthenticationError } from '@gpto/api';
 import { db } from '@gpto/database';
 import { audits } from '@gpto/database/src/schema';
-import { runTechnicalAudit, generateRecommendations } from '@gpto/audit';
+import { runTechnicalAudit, runSiteAudit, generateStructuredRecommendations } from '@gpto/audit';
 import { getSiteTier } from '@gpto/tiers';
 
 export const dynamic = 'force-dynamic';
@@ -43,11 +43,19 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Run technical audit
-    const auditResult = await runTechnicalAudit(siteId);
+    // Run audits
+    const [technicalAudit, siteAudit] = await Promise.all([
+      runTechnicalAudit(siteId),
+      runSiteAudit(siteId),
+    ]);
 
-    // Generate recommendations
-    const recommendations = await generateRecommendations(auditResult);
+    const technicalRecommendations = await generateStructuredRecommendations(technicalAudit);
+    const recommendations = [...siteAudit.recommendations, ...technicalRecommendations];
+
+    const auditResult = {
+      technical: technicalAudit,
+      siteAudit,
+    };
 
     // Store audit
     const [audit] = await db

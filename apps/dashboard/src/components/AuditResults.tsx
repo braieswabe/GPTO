@@ -5,6 +5,23 @@ interface AuditResult {
   type: 'technical' | 'content' | 'competitor';
   status: 'pending' | 'completed' | 'failed';
   results?: {
+    siteAudit?: {
+      scores: {
+        aiReadiness: number;
+        structure: number;
+        contentDepth: number;
+        technicalReadiness: number;
+        overall: number;
+      };
+    };
+    technical?: {
+      schema?: { score: number; issues: string[] };
+      performance?: { score: number; issues: string[] };
+      seo?: { score: number; issues: string[]; recommendations: string[] };
+      aiSearchOptimization?: { score: number; issues: string[]; recommendations: string[] };
+      accessibility?: { score: number; issues: string[] };
+      security?: { score: number; issues: string[] };
+    };
     schema?: { score: number; issues: string[] };
     performance?: { score: number; issues: string[] };
     seo?: { score: number; issues: string[]; recommendations: string[] };
@@ -17,6 +34,8 @@ interface AuditResult {
     category: string;
     issue: string;
     recommendation: string;
+    impact?: string;
+    effort?: 'low' | 'medium' | 'high';
   }>;
   createdAt: Date;
 }
@@ -47,28 +66,41 @@ export default function AuditResults({ audit }: AuditResultsProps) {
   }
 
   const results = audit.results;
+  const siteAudit = results.siteAudit;
+  const technical = results.technical || results;
+  const aiOptimization = technical.aiSearchOptimization || technical.seo;
 
   return (
     <div className="space-y-6">
       {/* Category Scores */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        {(results.aiSearchOptimization || results.seo) && (
-          <ScoreCard 
-            title="AI Search Optimization" 
-            score={(results.aiSearchOptimization || results.seo)!.score} 
-            issues={(results.aiSearchOptimization || results.seo)!.issues} 
-          />
-        )}
-        {results.performance && (
-          <ScoreCard title="Performance" score={results.performance.score} issues={results.performance.issues} />
-        )}
-        {results.security && (
-          <ScoreCard title="Security" score={results.security.score} issues={results.security.issues} />
-        )}
-        {results.accessibility && (
-          <ScoreCard title="Accessibility" score={results.accessibility.score} issues={results.accessibility.issues} />
-        )}
-      </div>
+      {siteAudit ? (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+          <ScoreCard title="Overall" score={siteAudit.scores.overall} />
+          <ScoreCard title="AI Readiness" score={siteAudit.scores.aiReadiness} />
+          <ScoreCard title="Structure" score={siteAudit.scores.structure} />
+          <ScoreCard title="Content Depth" score={siteAudit.scores.contentDepth} />
+          <ScoreCard title="Technical Readiness" score={siteAudit.scores.technicalReadiness} />
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          {aiOptimization && (
+            <ScoreCard
+              title="AI Search Optimization"
+              score={aiOptimization.score}
+              issues={aiOptimization.issues}
+            />
+          )}
+          {technical.performance && (
+            <ScoreCard title="Performance" score={technical.performance.score} issues={technical.performance.issues} />
+          )}
+          {technical.security && (
+            <ScoreCard title="Security" score={technical.security.score} issues={technical.security.issues} />
+          )}
+          {technical.accessibility && (
+            <ScoreCard title="Accessibility" score={technical.accessibility.score} issues={technical.accessibility.issues} />
+          )}
+        </div>
+      )}
 
       {/* Recommendations */}
       {audit.recommendations && audit.recommendations.length > 0 && (
@@ -83,11 +115,11 @@ export default function AuditResults({ audit }: AuditResultsProps) {
       )}
 
       {/* AI Search Optimization Recommendations */}
-      {((results.aiSearchOptimization || results.seo)?.recommendations && (results.aiSearchOptimization || results.seo)!.recommendations.length > 0) && (
+      {!siteAudit && aiOptimization?.recommendations && aiOptimization.recommendations.length > 0 && (
         <div className="bg-white rounded-lg shadow p-6">
           <h3 className="text-xl font-bold mb-4">AI Search Optimization Recommendations</h3>
           <ul className="list-disc list-inside space-y-2">
-            {(results.aiSearchOptimization || results.seo)!.recommendations.map((rec, index) => (
+            {aiOptimization.recommendations.map((rec, index) => (
               <li key={index} className="text-gray-700">{rec}</li>
             ))}
           </ul>
@@ -104,7 +136,7 @@ function ScoreCard({
 }: {
   title: string;
   score: number;
-  issues: string[];
+  issues?: string[];
 }) {
   const scoreColor = score >= 80 ? 'text-green-600' : score >= 60 ? 'text-yellow-600' : 'text-red-600';
 
@@ -112,7 +144,7 @@ function ScoreCard({
     <div className="bg-white rounded-lg shadow p-4">
       <h4 className="font-semibold mb-2">{title}</h4>
       <div className={`text-3xl font-bold ${scoreColor} mb-2`}>{score}/100</div>
-      {issues.length > 0 && (
+      {issues && issues.length > 0 && (
         <div className="text-sm text-gray-600">
           {issues.length} issue{issues.length !== 1 ? 's' : ''} found
         </div>
@@ -129,6 +161,8 @@ function RecommendationItem({
     category: string;
     issue: string;
     recommendation: string;
+    impact?: string;
+    effort?: 'low' | 'medium' | 'high';
   };
 }) {
   const priorityColors = {
@@ -150,6 +184,12 @@ function RecommendationItem({
           </div>
           <p className="text-sm font-medium mb-1">{recommendation.issue}</p>
           <p className="text-sm text-gray-700">{recommendation.recommendation}</p>
+          {recommendation.impact && (
+            <p className="text-xs text-gray-500 mt-2">Impact: {recommendation.impact}</p>
+          )}
+          {recommendation.effort && (
+            <p className="text-xs text-gray-500">Effort: {recommendation.effort}</p>
+          )}
         </div>
       </div>
     </div>

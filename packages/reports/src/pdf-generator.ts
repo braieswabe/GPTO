@@ -11,7 +11,7 @@ export interface PDFReportOptions {
   siteDomain?: string;
   technicalAudit: TechnicalAuditResult;
   contentAudit?: ContentAuditResult;
-  recommendations?: StructuredRecommendations[];
+  recommendations?: StructuredRecommendations[] | Record<string, unknown>;
   scorecard?: Scorecard;
 }
 
@@ -28,12 +28,14 @@ export async function generatePDFReport(options: PDFReportOptions): Promise<Buff
     recommendations,
   } = options;
 
+  const structuredRecommendations = Array.isArray(recommendations) ? recommendations : [];
+
   const scorecard = options.scorecard || generateScorecard(
     siteId,
     tier,
     technicalAudit,
     contentAudit,
-    recommendations
+    structuredRecommendations
   );
 
   return new Promise((resolve, reject) => {
@@ -110,16 +112,16 @@ export async function generatePDFReport(options: PDFReportOptions): Promise<Buff
     }
 
     // Recommendations
-    if (recommendations && recommendations.length > 0) {
+    if (structuredRecommendations.length > 0) {
       doc.addPage();
       doc.fontSize(16).text('Recommendations', { underline: true });
       doc.moveDown();
 
       const byPriority = {
-        critical: recommendations.filter(r => r.priority === 'critical'),
-        high: recommendations.filter(r => r.priority === 'high'),
-        medium: recommendations.filter(r => r.priority === 'medium'),
-        low: recommendations.filter(r => r.priority === 'low'),
+        critical: structuredRecommendations.filter(r => r.priority === 'critical'),
+        high: structuredRecommendations.filter(r => r.priority === 'high'),
+        medium: structuredRecommendations.filter(r => r.priority === 'medium'),
+        low: structuredRecommendations.filter(r => r.priority === 'low'),
       };
 
       ['critical', 'high', 'medium', 'low'].forEach(priority => {

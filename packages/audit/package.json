@@ -10,7 +10,9 @@
   "dependencies": {
     "@gpto/api-lattice": "workspace:*",
     "@gpto/database": "workspace:*",
-    "@gpto/schemas": "workspace:*"
+    "@gpto/schemas": "workspace:*",
+    "cheerio": "^1.0.0",
+    "fast-xml-parser": "^4.4.1"
   },
   "devDependencies": {
     "@types/node": "^25.0.10",

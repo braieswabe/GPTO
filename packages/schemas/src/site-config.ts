@@ -79,6 +79,31 @@ export interface SiteConfig {
         contexts: string[];
       }>;
     };
+    seo_enhancements?: {
+      meta_description?: string;
+      canonical_enabled?: boolean;
+      content_enhancements?: {
+        enabled: boolean;
+        what?: string;
+        who?: string;
+        how?: string;
+        trust?: string;
+      };
+      content_depth?: {
+        enabled: boolean;
+        min_h2_count?: number;
+        h2_templates?: string[];
+        content_templates?: string[];
+        default_content?: string;
+      };
+      structure_enhancements?: {
+        inject_h1_if_missing?: boolean;
+        h1_text?: string;
+        enhance_title?: boolean;
+        min_title_length?: number;
+        title_template?: string;
+      };
+    };
     policy: {
       privacy_mode: 'anon' | 'full' | 'minimal';
       log_level: 'basic' | 'detailed' | 'verbose';
@@ -242,6 +267,47 @@ export const siteConfigSchema: JSONSchemaType<SiteConfig> = {
                   id: { type: 'string' },
                   contexts: { type: 'array', items: { type: 'string' } },
                 },
+              },
+            },
+          },
+        },
+        seo_enhancements: {
+          type: 'object',
+          nullable: true,
+          properties: {
+            meta_description: { type: 'string', nullable: true },
+            canonical_enabled: { type: 'boolean', nullable: true },
+            content_enhancements: {
+              type: 'object',
+              nullable: true,
+              properties: {
+                enabled: { type: 'boolean' },
+                what: { type: 'string', nullable: true },
+                who: { type: 'string', nullable: true },
+                how: { type: 'string', nullable: true },
+                trust: { type: 'string', nullable: true },
+              },
+            },
+            content_depth: {
+              type: 'object',
+              nullable: true,
+              properties: {
+                enabled: { type: 'boolean' },
+                min_h2_count: { type: 'number', nullable: true },
+                h2_templates: { type: 'array', items: { type: 'string' }, nullable: true },
+                content_templates: { type: 'array', items: { type: 'string' }, nullable: true },
+                default_content: { type: 'string', nullable: true },
+              },
+            },
+            structure_enhancements: {
+              type: 'object',
+              nullable: true,
+              properties: {
+                inject_h1_if_missing: { type: 'boolean', nullable: true },
+                h1_text: { type: 'string', nullable: true },
+                enhance_title: { type: 'boolean', nullable: true },
+                min_title_length: { type: 'number', nullable: true },
+                title_template: { type: 'string', nullable: true },
               },
             },
           },

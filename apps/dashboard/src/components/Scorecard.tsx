@@ -3,12 +3,16 @@
 interface ScorecardData {
   overallScore: number;
   categoryScores: {
-    schema: number;
-    performance: number;
+    aiReadiness?: number;
+    structure?: number;
+    contentDepth?: number;
+    technicalReadiness?: number;
+    schema?: number;
+    performance?: number;
     seo?: number;
     aiSearchOptimization?: number;
-    accessibility: number;
-    security: number;
+    accessibility?: number;
+    security?: number;
     content?: number;
   };
   recommendations: {
@@ -48,11 +52,24 @@ export default function Scorecard({ scorecard }: ScorecardProps) {
               if (score === undefined) return null;
               // Skip seo if aiSearchOptimization exists
               if (category === 'seo' && scorecard.categoryScores.aiSearchOptimization !== undefined) return null;
-              const displayLabel = category === 'aiSearchOptimization' ? 'AI Search Optimization' : category === 'seo' ? 'SEO' : category;
+              const displayLabelMap: Record<string, string> = {
+                aiSearchOptimization: 'AI Search Optimization',
+                aiReadiness: 'AI Readiness',
+                structure: 'Structure',
+                contentDepth: 'Content Depth',
+                technicalReadiness: 'Technical Readiness',
+                seo: 'SEO',
+                schema: 'Schema',
+                performance: 'Performance',
+                accessibility: 'Accessibility',
+                security: 'Security',
+                content: 'Content',
+              };
+              const displayLabel = displayLabelMap[category] || category;
               return (
                 <div key={category}>
                   <div className="flex justify-between mb-1">
-                    <span className="font-medium capitalize">{displayLabel}</span>
+                    <span className="font-medium">{displayLabel}</span>
                     <span className="font-semibold">{score}/100</span>
                   </div>
                   <div className="w-full bg-gray-200 rounded-full h-3">

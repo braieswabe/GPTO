@@ -71,14 +71,15 @@ export async function POST(request: NextRequest) {
     }
 
     const results: Record<string, unknown> = {};
+    const auditResults = audit.results as Record<string, unknown> | undefined;
+    const technicalAudit = (auditResults && (auditResults as { technical?: unknown }).technical) || auditResults;
 
     // Generate scorecard
     if (reportTypes.includes('scorecard')) {
-      const technicalAudit = audit.results as unknown as { schema?: unknown; performance?: unknown; seo?: unknown; accessibility?: unknown; security?: unknown };
       const scorecard = generateScorecard(
         audit.siteId,
         audit.tier,
-        technicalAudit as any,
+        auditResults as any,
         undefined,
         audit.recommendations as any
       );
@@ -91,7 +92,7 @@ export async function POST(request: NextRequest) {
         siteId: audit.siteId,
         tier: audit.tier as 'bronze' | 'silver' | 'gold',
         siteDomain: site?.domain,
-        technicalAudit: audit.results as any,
+        technicalAudit: technicalAudit as any,
         recommendations: audit.recommendations as any,
       });
 
@@ -111,7 +112,7 @@ export async function POST(request: NextRequest) {
         const scorecard = generateScorecard(
           audit.siteId,
           audit.tier,
-          audit.results as any,
+          auditResults as any,
           undefined,
           audit.recommendations as any
         );
