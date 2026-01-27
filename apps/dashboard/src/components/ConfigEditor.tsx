@@ -9,8 +9,150 @@ interface ConfigEditorProps {
   externalConfig?: unknown; // For updates from Panthera
 }
 
+// Comprehensive example config with all available features
+const EXAMPLE_CONFIG = {
+  panthera_blackbox: {
+    version: '1.0.0',
+    site: {
+      domain: 'example.com',
+      brand: 'Example Brand',
+      verticals: ['technology', 'saas'],
+      geo: ['US', 'CA'],
+    },
+    telemetry: {
+      emit: true,
+      keys: ['ts.intent', 'ts.authority', 'ts.rank', 'ai.schemaCompleteness', 'ai.searchVisibility'],
+    },
+    tier: 'bronze',
+    authority_grove: {
+      node: {
+        id: 'https://example.com',
+        type: 'Organization',
+        name: 'Example Brand',
+        sameAs: ['https://twitter.com/example', 'https://linkedin.com/company/example'],
+        keywords: ['technology', 'saas', 'ai optimization'],
+      },
+      partners: [
+        {
+          id: 'https://partner.com',
+          type: 'Organization',
+          weight: 0.8,
+        },
+      ],
+      trustEdges: [],
+      corroboration: [],
+    },
+    truthseeker: {
+      weights: {
+        intent_match: 0.3,
+        anchor_match: 0.2,
+        authority: 0.25,
+        recency: 0.15,
+        fairness: 0.1,
+      },
+    },
+    products: [
+      {
+        name: 'Product Name',
+        description: 'Product description here',
+      },
+    ],
+    services: [
+      {
+        name: 'Service Name',
+        description: 'Service description here',
+      },
+    ],
+    faqs: [
+      {
+        question: 'What is GPTO?',
+        answer: 'GPTO is an AI search optimization platform.',
+      },
+    ],
+    seo_enhancements: {
+      meta_description: 'Your default meta description for pages that will be injected if missing',
+      canonical_enabled: true,
+      content_enhancements: {
+        enabled: true,
+        what: 'We help businesses optimize their online presence for AI search engines like ChatGPT, Perplexity, and Claude.',
+        who: 'Our platform is designed for teams, businesses, and companies looking to improve their AI search visibility.',
+        how: 'Get started by installing our Black Box runtime, configure your Authority Grove, and watch your scores improve automatically.',
+        trust: 'Trusted by leading companies. We maintain security, privacy, and compliance standards including GDPR and SOC 2.',
+      },
+      content_depth: {
+        enabled: true,
+        min_h2_count: 6,
+        h2_templates: [
+          'About Our Platform',
+          'Key Features',
+          'How It Works',
+          'Pricing Plans',
+          'Customer Success Stories',
+          'Getting Started',
+        ],
+        content_templates: [
+          'Our platform provides comprehensive solutions for AI search optimization, helping businesses improve their visibility in AI-powered search engines.',
+          'Key features include automated schema injection, authority signal building, and real-time score tracking.',
+          'The platform works seamlessly by injecting structured data and content enhancements that AI models can easily parse and understand.',
+          'Flexible pricing plans are available to suit businesses of all sizes, from startups to enterprise organizations.',
+          'Join hundreds of satisfied customers who have improved their AI search visibility and increased organic traffic.',
+          'Getting started is easy - simply install the Black Box runtime and configure your settings through our intuitive dashboard.',
+        ],
+        default_content: 'This section provides additional context and information for AI search engines to better understand your content and improve search visibility.',
+      },
+      structure_enhancements: {
+        inject_h1_if_missing: true,
+        h1_text: 'Welcome to Example Brand',
+        enhance_title: true,
+        min_title_length: 30,
+        title_template: '{brand} - AI Search Optimization Platform',
+      },
+    },
+    autofill: {
+      enabled: true,
+      forms: [
+        {
+          selector: '#contact-form',
+          map: {
+            email: 'input[name="email"]',
+            name: 'input[name="name"]',
+          },
+        },
+      ],
+    },
+    ads: {
+      slots: [
+        {
+          id: 'header-ad',
+          contexts: ['homepage', 'product'],
+        },
+      ],
+    },
+    geo_nodes: {
+      enabled: true,
+      cities_max: 10,
+      attractions_max: 5,
+      templates: {
+        city: 'Explore {city} with our services',
+        attraction: 'Visit {attraction} in {city}',
+      },
+    },
+    policy: {
+      privacy_mode: 'anon',
+      log_level: 'basic',
+    },
+  },
+};
+
 export function ConfigEditor({ initialConfig, onSubmit, onCancel, externalConfig }: ConfigEditorProps) {
-  const [config, setConfig] = useState(() => JSON.stringify(initialConfig, null, 2));
+  // Use example config if initialConfig is empty/null/undefined
+  const defaultConfig = 
+    !initialConfig || 
+    (typeof initialConfig === 'object' && Object.keys(initialConfig).length === 0)
+      ? EXAMPLE_CONFIG
+      : initialConfig;
+  
+  const [config, setConfig] = useState(() => JSON.stringify(defaultConfig, null, 2));
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -54,7 +196,7 @@ export function ConfigEditor({ initialConfig, onSubmit, onCancel, externalConfig
             setError(null);
           }}
           className="w-full h-96 font-mono text-sm p-4 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-none text-gray-900 placeholder-gray-500 bg-white"
-          placeholder='{"panthera_blackbox": {...}}'
+          placeholder={JSON.stringify(EXAMPLE_CONFIG, null, 2)}
         />
         {error && (
           <div className="mt-2 p-3 bg-red-50 border border-red-200 rounded-lg">
