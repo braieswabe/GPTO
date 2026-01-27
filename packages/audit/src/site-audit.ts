@@ -757,7 +757,7 @@ function buildRecommendations(signals: SiteAuditSignals): StructuredRecommendati
       category: 'AI Readiness',
       priority: 'high',
       when: (s) => s.answerability.whoRate < 0.2,
-      issue: '"Who it's for" messaging is missing or rare across scanned pages.',
+      issue: '"Who it\'s for" messaging is missing or rare across scanned pages.',
       recommendation: 'Add target audience statements (teams, industries, personas) across primary pages.',
       impact: 'High - Audience clarity improves answerability and relevance.',
       effort: 'low',

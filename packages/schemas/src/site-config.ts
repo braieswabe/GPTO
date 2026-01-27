@@ -133,6 +133,7 @@ export const siteConfigSchema: JSONSchemaType<SiteConfig> = {
         truthseeker: {
           type: 'object',
           nullable: true,
+          required: [],
           properties: {
             weights: {
               type: 'object',
@@ -149,6 +150,7 @@ export const siteConfigSchema: JSONSchemaType<SiteConfig> = {
             rules: {
               type: 'object',
               nullable: true,
+              required: [],
               properties: {
                 downweight_affiliate_listicles: { type: 'boolean', nullable: true },
                 branch_reviews_are_local: { type: 'boolean', nullable: true },
@@ -274,12 +276,14 @@ export const siteConfigSchema: JSONSchemaType<SiteConfig> = {
         seo_enhancements: {
           type: 'object',
           nullable: true,
+          required: [],
           properties: {
             meta_description: { type: 'string', nullable: true },
             canonical_enabled: { type: 'boolean', nullable: true },
             content_enhancements: {
               type: 'object',
               nullable: true,
+              required: [],
               properties: {
                 enabled: { type: 'boolean' },
                 what: { type: 'string', nullable: true },
@@ -291,6 +295,7 @@ export const siteConfigSchema: JSONSchemaType<SiteConfig> = {
             content_depth: {
               type: 'object',
               nullable: true,
+              required: [],
               properties: {
                 enabled: { type: 'boolean' },
                 min_h2_count: { type: 'number', nullable: true },
@@ -302,6 +307,7 @@ export const siteConfigSchema: JSONSchemaType<SiteConfig> = {
             structure_enhancements: {
               type: 'object',
               nullable: true,
+              required: [],
               properties: {
                 inject_h1_if_missing: { type: 'boolean', nullable: true },
                 h1_text: { type: 'string', nullable: true },
