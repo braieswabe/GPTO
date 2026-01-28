@@ -382,8 +382,82 @@ function DashboardContent() {
         { title: 'What should we double down on or sell?' },
       ];
 
+  const signalChips = demoMode
+    ? [
+        { label: 'Telemetry', status: 'Strong', detail: 'High signal' },
+        { label: 'Confusion', status: 'Watch', detail: 'Rising loops' },
+        { label: 'Authority', status: 'Watch', detail: 'Trust gaps' },
+        { label: 'Schema', status: 'Strong', detail: 'Clean coverage' },
+        { label: 'Coverage', status: 'Watch', detail: 'Missing stages' },
+      ]
+    : [
+        { label: 'Telemetry', status: 'Idle', detail: 'No data yet' },
+        { label: 'Confusion', status: 'Idle', detail: 'No data yet' },
+        { label: 'Authority', status: 'Idle', detail: 'No data yet' },
+        { label: 'Schema', status: 'Idle', detail: 'No data yet' },
+        { label: 'Coverage', status: 'Idle', detail: 'No data yet' },
+      ];
+
+  const pulseCards = demoMode
+    ? [
+        {
+          title: 'Revenue impact',
+          value: '+$320k',
+          helper: 'Attributable to intent-aligned pages',
+          trend: '+8% MoM',
+        },
+        {
+          title: 'Experience health',
+          value: '84/100',
+          helper: 'Drop-offs concentrated in checkout flow',
+          trend: '+3 pts',
+        },
+        {
+          title: 'Trust lift',
+          value: '+12%',
+          helper: 'Proof points added to top 3 pages',
+          trend: 'Stable',
+        },
+        {
+          title: 'Coverage risk',
+          value: 'Medium',
+          helper: 'Missing mid-funnel content',
+          trend: 'Needs focus',
+        },
+      ]
+    : [
+        { title: 'Revenue impact' },
+        { title: 'Experience health' },
+        { title: 'Trust lift' },
+        { title: 'Coverage risk' },
+      ];
+
+  const focusLanes = demoMode
+    ? [
+        {
+          title: 'Double down',
+          description: 'Strong signals to amplify.',
+          items: ['Pricing clarity', 'AI-ready product pages', 'Partner proof points'],
+        },
+        {
+          title: 'Fix now',
+          description: 'High friction moments.',
+          items: ['Refund policy dead ends', 'Search intent mismatch on docs', 'Broken schema on FAQ'],
+        },
+        {
+          title: 'Stop',
+          description: 'Work that is not paying off.',
+          items: ['Deprecated integration pages', 'Low-intent blog topics', 'Duplicated landing pages'],
+        },
+      ]
+    : [
+        { title: 'Double down', description: 'Strong signals to amplify.', items: [] },
+        { title: 'Fix now', description: 'High friction moments.', items: [] },
+        { title: 'Stop', description: 'Work that is not paying off.', items: [] },
+      ];
+
   return (
-    <div className="bg-slate-50 min-h-screen">
+    <div className="bg-gradient-to-br from-slate-50 via-white to-slate-100 min-h-screen">
       <div className="p-8 max-w-7xl mx-auto space-y-8">
         <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
           <div>
@@ -527,6 +601,101 @@ function DashboardContent() {
 
         <section className="space-y-4">
           <div>
+            <h2 className="text-xl font-semibold text-gray-900">Executive pulse</h2>
+            <p className="text-sm text-gray-600">
+              A single read on momentum, trust, and coverage health.
+            </p>
+          </div>
+          <div className="grid grid-cols-1 xl:grid-cols-3 gap-4">
+            <div className="bg-white border border-gray-200 rounded-xl p-6 xl:col-span-2">
+              <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-4">
+                <div>
+                  <h3 className="text-lg font-semibold text-gray-900">Business brief</h3>
+                  <p className="mt-2 text-sm text-gray-600">
+                    A fast, executive summary of what to reinforce, repair, or retire.
+                  </p>
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  {signalChips.map((chip) => (
+                    <SignalChip key={chip.label} {...chip} />
+                  ))}
+                </div>
+              </div>
+              <div className="mt-6 grid grid-cols-1 md:grid-cols-2 gap-4">
+                {pulseCards.map((card) => (
+                  <PulseCard key={card.title} {...card} />
+                ))}
+              </div>
+            </div>
+
+            <div className="bg-white border border-gray-200 rounded-xl p-6">
+              <h3 className="text-lg font-semibold text-gray-900">Momentum map</h3>
+              <p className="mt-2 text-sm text-gray-600">
+                Where you are gaining confidence vs. losing momentum.
+              </p>
+              {demoMode ? (
+                <div className="mt-5 space-y-4">
+                  {[
+                    { label: 'Pricing pages', value: 82 },
+                    { label: 'Onboarding flow', value: 68 },
+                    { label: 'Docs & support', value: 44 },
+                    { label: 'Partner ecosystem', value: 77 },
+                  ].map((item) => (
+                    <div key={item.label}>
+                      <div className="flex items-center justify-between text-xs text-gray-500">
+                        <span>{item.label}</span>
+                        <span>{item.value}%</span>
+                      </div>
+                      <div className="mt-2 h-2 rounded-full bg-gray-100">
+                        <div
+                          className="h-2 rounded-full bg-blue-600"
+                          style={{ width: `${item.value}%` }}
+                        />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <NoDataState helper="Momentum appears once telemetry, audits, and coverage signals connect." />
+              )}
+            </div>
+          </div>
+        </section>
+
+        <section className="space-y-4">
+          <div>
+            <h2 className="text-xl font-semibold text-gray-900">Focus lanes</h2>
+            <p className="text-sm text-gray-600">
+              Decisions grouped by what to scale, fix, or stop.
+            </p>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            {focusLanes.map((lane) => (
+              <div key={lane.title} className="bg-white border border-gray-200 rounded-xl p-6">
+                <div className="flex items-center justify-between">
+                  <h3 className="text-sm font-semibold text-gray-900">{lane.title}</h3>
+                  <span className="text-xs text-gray-400">{lane.items.length || 0} items</span>
+                </div>
+                <p className="mt-2 text-xs text-gray-500">{lane.description}</p>
+                {lane.items.length > 0 ? (
+                  <ul className="mt-4 space-y-2 text-sm text-gray-700">
+                    {lane.items.map((item) => (
+                      <li key={item} className="flex items-start gap-2">
+                        <span className="mt-1 h-2 w-2 rounded-full bg-blue-600" />
+                        <span>{item}</span>
+                      </li>
+                    ))}
+                  </ul>
+                ) : (
+                  <NoDataState helper="Signals will populate once behavioral and audit data are available." />
+                )}
+              </div>
+            ))}
+          </div>
+        </section>
+
+        <section className="space-y-4">
+          <div>
             <h2 className="text-xl font-semibold text-gray-900">Executive questions</h2>
             <p className="text-sm text-gray-600">
               What’s working, what’s broken, and where to focus next.
@@ -637,5 +806,55 @@ export default function DashboardPage() {
     <ProtectedRoute>
       <DashboardContent />
     </ProtectedRoute>
+  );
+}
+
+function SignalChip({
+  label,
+  status,
+  detail,
+}: {
+  label: string;
+  status: 'Strong' | 'Watch' | 'Idle' | 'Weak';
+  detail: string;
+}) {
+  const styles: Record<string, string> = {
+    Strong: 'bg-emerald-100 text-emerald-700',
+    Watch: 'bg-amber-100 text-amber-700',
+    Weak: 'bg-rose-100 text-rose-700',
+    Idle: 'bg-gray-100 text-gray-500',
+  };
+
+  return (
+    <div className={`rounded-full px-3 py-1 text-xs font-medium ${styles[status]}`}>
+      {label}: {detail}
+    </div>
+  );
+}
+
+function PulseCard({
+  title,
+  value,
+  helper,
+  trend,
+}: {
+  title: string;
+  value?: string;
+  helper?: string;
+  trend?: string;
+}) {
+  return (
+    <div className="rounded-lg border border-gray-200 bg-gray-50 p-4">
+      <p className="text-xs uppercase tracking-wide text-gray-500">{title}</p>
+      {value ? (
+        <div className="mt-3">
+          <p className="text-2xl font-semibold text-gray-900">{value}</p>
+          {trend ? <p className="text-xs text-blue-600 mt-1">{trend}</p> : null}
+          {helper ? <p className="text-xs text-gray-500 mt-2">{helper}</p> : null}
+        </div>
+      ) : (
+        <NoDataState helper="Signals will appear once data is connected." />
+      )}
+    </div>
   );
 }
