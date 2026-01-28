@@ -85,6 +85,16 @@ interface PageSummary {
   text: string;
 }
 
+export interface ContentInventoryPage {
+  url: string;
+  path: string;
+  title: string;
+  hasJsonLd: boolean;
+  h1Count: number;
+  h2Count: number;
+  textLength: number;
+}
+
 interface CrawlResult {
   pages: PageSummary[];
   usedSitemap: boolean;
@@ -152,6 +162,31 @@ export async function auditSite(urlInput: string): Promise<SiteAuditResult> {
 
   cache.set(origin, { ts: Date.now(), payload: result });
   return result;
+}
+
+export async function crawlContentInventory(urlInput: string): Promise<ContentInventoryPage[]> {
+  const url = normalizeInputUrl(urlInput);
+  const origin = new URL(url).origin;
+  const crawl = await crawlSite(url, origin);
+
+  return crawl.pages.map((page) => {
+    let path = '/';
+    try {
+      path = new URL(page.url).pathname || '/';
+    } catch {
+      path = '/';
+    }
+
+    return {
+      url: page.url,
+      path,
+      title: page.title,
+      hasJsonLd: page.hasJsonLd,
+      h1Count: page.h1Count,
+      h2Count: page.h2Count,
+      textLength: page.text.length,
+    };
+  });
 }
 
 function getCache(): Map<string, { ts: number; payload: SiteAuditResult }> {

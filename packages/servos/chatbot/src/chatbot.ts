@@ -2,8 +2,7 @@ import { classifyIntent, IntentResult } from './intent-engine';
 import { generateRoutePlan, RoutePlan } from './mode-router';
 import { calculateAPMWeights, APMInputs, APMWeights } from './apm';
 import { runARCCluster, shouldTriggerARC } from './arc-cluster';
-import { createChronoContext, addAnchor, rehydrateContext, updateTimeLag, ChronoContext } from './chronocontext';
-import { calculateTDM, generateTDMReport } from './tdm';
+import { calculateTDM } from './tdm';
 
 /**
  * PantheraChat - Main chatbot orchestrator
@@ -107,7 +106,7 @@ export async function processChatMessage(
  * Generate response based on route plan
  */
 async function generateResponse(
-  message: string,
+  _message: string,
   intent: IntentResult,
   routePlan: RoutePlan,
   apmWeights: APMWeights,

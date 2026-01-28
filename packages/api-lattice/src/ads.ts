@@ -24,8 +24,8 @@ export interface AdCampaign {
  */
 export async function createCampaign(
   provider: AdsProvider,
-  apiKey: string,
-  campaign: AdCampaign
+  _apiKey: string,
+  _campaign: AdCampaign
 ): Promise<{ success: boolean; campaignId?: string }> {
   // Placeholder - in production would use actual ads APIs
   switch (provider) {

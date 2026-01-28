@@ -1,0 +1,64 @@
+import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { GET } from './route';
+import { NextRequest } from 'next/server';
+
+// Mock dependencies
+vi.mock('@gpto/database', () => ({
+  db: {
+    select: vi.fn(),
+    insert: vi.fn(),
+  },
+}));
+
+vi.mock('@gpto/api', () => ({
+  extractToken: vi.fn(() => 'mock-token'),
+  verifyToken: vi.fn(),
+}));
+
+vi.mock('@/lib/dashboard-helpers', () => ({
+  parseDateRange: vi.fn(() => ({
+    start: new Date('2025-01-01'),
+    end: new Date('2025-01-08'),
+    rangeKey: '7d',
+  })),
+  getSiteIds: vi.fn(async () => ['site-1']),
+}));
+
+describe('GET /api/dashboard/authority', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it('should return authority data for valid request', async () => {
+    const mockEvents = [
+      {
+        metrics: { 'ts.authority': 0.75, 'ai.authoritySignals': 0.8 },
+      },
+      {
+        metrics: { 'ts.authority': 0.85, 'ai.schemaCompleteness': 0.9 },
+      },
+    ];
+
+    const mockSelect = vi.fn().mockReturnValue({
+      from: vi.fn().mockReturnValue({
+        where: vi.fn().mockResolvedValue(mockEvents),
+      }),
+    });
+
+    vi.mocked(require('@gpto/database').db.select).mockReturnValue(mockSelect as any);
+
+    const request = new NextRequest('http://localhost/api/dashboard/authority?range=7d', {
+      headers: {
+        authorization: 'Bearer mock-token',
+      },
+    });
+
+    const response = await GET(request);
+    const data = await response.json();
+
+    expect(response.status).toBe(200);
+    expect(data).toHaveProperty('authorityScore');
+    expect(data).toHaveProperty('trustSignals');
+    expect(data).toHaveProperty('confidence');
+  });
+});

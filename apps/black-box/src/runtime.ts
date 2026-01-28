@@ -116,6 +116,18 @@ interface TelemetryEvent {
   tenant: string;
   timestamp: string;
   source: 'blackbox';
+  event_type: 'page_view' | 'interaction' | 'search' | 'custom';
+  session_id?: string;
+  page?: {
+    url?: string;
+    path?: string;
+    title?: string;
+  };
+  search?: {
+    query?: string;
+    results_count?: number;
+    selected_result?: string;
+  };
   context?: Record<string, unknown>;
   metrics: Record<string, number>;
 }
@@ -671,15 +683,36 @@ class PantheraBlackBox {
   private async sendTelemetry(eventType: string, data: Record<string, unknown>): Promise<void> {
     if (!this.config?.panthera_blackbox.telemetry?.emit) return;
 
+    const { page, search, ...context } = data;
+    const sessionId = this.getSessionId();
+    const isPageView = eventType === 'page_view';
+    const pagePayload =
+      page ||
+      (isPageView && typeof window !== 'undefined'
+        ? {
+            url: window.location.href,
+            path: window.location.pathname,
+            title: document.title,
+          }
+        : undefined);
+    const searchPayload: TelemetryEvent['search'] = eventType === 'search' && search 
+      ? (search as TelemetryEvent['search'])
+      : undefined;
+
+    const contextPayload = { event_type: eventType, ...context };
+
     const event: TelemetryEvent = {
       schema: 'panthera.blackbox.v1',
       tenant: this.config.panthera_blackbox.site.domain,
       timestamp: new Date().toISOString(),
       source: 'blackbox',
-      context: {
-        event_type: eventType,
-        ...data,
-      },
+      event_type: (['page_view', 'interaction', 'search'].includes(eventType)
+        ? eventType
+        : 'custom') as TelemetryEvent['event_type'],
+      session_id: sessionId,
+      page: pagePayload,
+      search: searchPayload,
+      context: Object.keys(contextPayload).length > 0 ? contextPayload : undefined,
       metrics: this.collectMetrics(),
     };
 
@@ -734,6 +767,32 @@ class PantheraBlackBox {
     });
 
     return metrics;
+  }
+
+  private getSessionId(): string | undefined {
+    if (typeof window === 'undefined') return undefined;
+    const storage = window.sessionStorage;
+    if (!storage) return undefined;
+
+    const key = 'panthera_session_id';
+    const tsKey = 'panthera_session_ts';
+    const now = Date.now();
+    const ttlMs = 30 * 60 * 1000;
+
+    const existing = storage.getItem(key);
+    const existingTs = Number(storage.getItem(tsKey) || 0);
+    if (existing && existingTs && now - existingTs < ttlMs) {
+      storage.setItem(tsKey, String(now));
+      return existing;
+    }
+
+    const newId =
+      typeof crypto !== 'undefined' && 'randomUUID' in crypto
+        ? crypto.randomUUID()
+        : `${now}-${Math.random().toString(16).slice(2)}`;
+    storage.setItem(key, newId);
+    storage.setItem(tsKey, String(now));
+    return newId;
   }
 
   /**

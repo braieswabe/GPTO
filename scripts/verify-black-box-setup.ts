@@ -9,7 +9,6 @@
  * 3. If schemas are being injected
  */
 
-import { readFileSync } from 'fs';
 
 const SITE_ID = process.argv[2];
 const DOMAIN = process.argv[3];
@@ -33,7 +32,17 @@ async function checkConfigEndpoint() {
       return false;
     }
     
-    const config = await response.json();
+    const config = (await response.json()) as {
+      panthera_blackbox?: {
+        site?: { brand?: string; domain?: string };
+        telemetry?: { emit?: boolean };
+        authority_grove?: {
+          node?: {
+            sameAs?: string[];
+          };
+        };
+      };
+    };
     
     if (!config.panthera_blackbox) {
       console.error('❌ Config missing panthera_blackbox structure');

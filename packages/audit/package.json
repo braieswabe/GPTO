@@ -12,7 +12,8 @@
     "@gpto/database": "workspace:*",
     "@gpto/schemas": "workspace:*",
     "cheerio": "^1.0.0",
-    "fast-xml-parser": "^4.4.1"
+    "fast-xml-parser": "^4.5.3",
+    "strnum": "^1.0.5"
   },
   "devDependencies": {
     "@types/node": "^25.0.10",

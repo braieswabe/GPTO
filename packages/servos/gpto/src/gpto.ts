@@ -33,7 +33,7 @@ export interface ContentGenerationResult {
  */
 export async function generateContent(
   request: ContentGenerationRequest,
-  options: GPTOOptions
+  _options: GPTOOptions
 ): Promise<ContentGenerationResult> {
   // This is a placeholder - in production, this would:
   // 1. Use AGCC for content generation
@@ -173,7 +173,7 @@ export function generateLocalBusinessSchema(config: SiteConfig, businessData?: {
 /**
  * Generate FAQPage schema
  */
-export function generateFAQSchema(config: SiteConfig, faqs: Array<{
+export function generateFAQSchema(_config: SiteConfig, faqs: Array<{
   question: string;
   answer: string;
 }>): unknown {

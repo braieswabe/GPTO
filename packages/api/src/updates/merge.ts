@@ -82,7 +82,7 @@ export function applyChanges(obj: unknown, changes: Change[]): unknown {
 /**
  * Merge two configs safely
  */
-export function mergeConfigs(oldConfig: unknown, newConfig: unknown): unknown {
+export function mergeConfigs(_oldConfig: unknown, newConfig: unknown): unknown {
   // For now, new config takes precedence
   // In production, you might want more sophisticated merging logic
   return newConfig;

@@ -14,7 +14,7 @@ export interface LLMProvider {
 export async function callLLM(
   prompt: string,
   provider: LLMProvider,
-  options?: {
+  _options?: {
     temperature?: number;
     maxTokens?: number;
     systemPrompt?: string;

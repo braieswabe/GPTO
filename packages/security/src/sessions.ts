@@ -67,9 +67,10 @@ export async function verifySession(token: string): Promise<SessionData | null> 
  * Clean up expired sessions
  */
 export async function cleanupExpiredSessions(): Promise<number> {
-  const result = await db
+  const deleted = await db
     .delete(securitySessions)
-    .where(lt(securitySessions.expiresAt, new Date()));
+    .where(lt(securitySessions.expiresAt, new Date()))
+    .returning();
 
-  return result.rowCount || 0;
+  return deleted.length;
 }

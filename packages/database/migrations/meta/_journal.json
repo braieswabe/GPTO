@@ -8,6 +8,13 @@
       "when": 1769029805244,
       "tag": "0000_famous_shard",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "5",
+      "when": 1769628665619,
+      "tag": "0001_dashboard_signals",
+      "breakpoints": true
     }
   ]
 }

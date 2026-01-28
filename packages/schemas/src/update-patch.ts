@@ -1,4 +1,3 @@
-import { JSONSchemaType } from 'ajv';
 
 /**
  * Update Patch Schema
@@ -26,7 +25,7 @@ export interface UpdatePatch {
   };
 }
 
-export const updatePatchSchema: JSONSchemaType<UpdatePatch> = {
+export const updatePatchSchema = {
   type: 'object',
   required: ['site_id', 'from_version', 'to_version', 'patch_type', 'changes', 'signature', 'signed_by', 'signed_at'],
   properties: {
@@ -42,9 +41,10 @@ export const updatePatchSchema: JSONSchemaType<UpdatePatch> = {
         properties: {
           path: { type: 'string' },
           operation: { type: 'string', enum: ['add', 'remove', 'replace', 'move', 'copy'] },
-          value: { nullable: true },
-          old_value: { nullable: true },
+          value: {},
+          old_value: {},
         },
+        additionalProperties: false,
       },
     },
     signature: { type: 'string' },
@@ -53,12 +53,8 @@ export const updatePatchSchema: JSONSchemaType<UpdatePatch> = {
     metadata: {
       type: 'object',
       nullable: true,
+      required: [],
       additionalProperties: true,
-      properties: {
-        reason: { type: 'string', nullable: true },
-        approved_by: { type: 'string', nullable: true },
-        approved_at: { type: 'string', nullable: true, format: 'date-time' },
-      },
     },
   },
 };

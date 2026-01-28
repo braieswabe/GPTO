@@ -1,6 +1,6 @@
 import { db } from '@gpto/database';
 import { telemetryEvents } from '@gpto/database/src/schema';
-import { eq, gte, desc } from 'drizzle-orm';
+import { eq, gte, lte, and, desc } from 'drizzle-orm';
 
 /**
  * MIBI - Market & Business Intelligence
@@ -43,8 +43,10 @@ export async function generateIntentHeatmap(
   const events = await db
     .select()
     .from(telemetryEvents)
-    .where(eq(telemetryEvents.siteId, siteId))
-    .where(gte(telemetryEvents.timestamp, cutoffDate))
+    .where(and(
+      eq(telemetryEvents.siteId, siteId),
+      gte(telemetryEvents.timestamp, cutoffDate)
+    ))
     .orderBy(desc(telemetryEvents.timestamp));
 
   // Aggregate by intent
@@ -94,25 +96,29 @@ export async function calculateAuthorityDelta(
   const recentEvents = await db
     .select()
     .from(telemetryEvents)
-    .where(eq(telemetryEvents.siteId, siteId))
-    .where(gte(telemetryEvents.timestamp, cutoffDate));
+    .where(and(
+      eq(telemetryEvents.siteId, siteId),
+      gte(telemetryEvents.timestamp, cutoffDate)
+    ));
 
   // Get previous period events
   const previousEvents = await db
     .select()
     .from(telemetryEvents)
-    .where(eq(telemetryEvents.siteId, siteId))
-    .where(gte(telemetryEvents.timestamp, previousCutoff))
-    .where(eq(telemetryEvents.timestamp, cutoffDate));
+    .where(and(
+      eq(telemetryEvents.siteId, siteId),
+      gte(telemetryEvents.timestamp, previousCutoff),
+      lte(telemetryEvents.timestamp, cutoffDate)
+    ));
 
   const currentAvg =
-    recentEvents.reduce((sum, e) => {
+    recentEvents.reduce((sum: number, e) => {
       const auth = (e.metrics as Record<string, number>)?.['ts.authority'] || 0;
       return sum + auth;
     }, 0) / (recentEvents.length || 1);
 
   const previousAvg =
-    previousEvents.reduce((sum, e) => {
+    previousEvents.reduce((sum: number, e) => {
       const auth = (e.metrics as Record<string, number>)?.['ts.authority'] || 0;
       return sum + auth;
     }, 0) / (previousEvents.length || 1);
@@ -141,8 +147,10 @@ export async function analyzeSentiment(
   const events = await db
     .select()
     .from(telemetryEvents)
-    .where(eq(telemetryEvents.siteId, siteId))
-    .where(gte(telemetryEvents.timestamp, cutoffDate));
+    .where(and(
+      eq(telemetryEvents.siteId, siteId),
+      gte(telemetryEvents.timestamp, cutoffDate)
+    ));
 
   let positive = 0;
   let negative = 0;

@@ -1,4 +1,3 @@
-import { JSONSchemaType } from 'ajv';
 
 /**
  * Governance Rule Schema
@@ -26,7 +25,7 @@ export interface GovernanceRule {
   updated_at: string;
 }
 
-export const governanceRuleSchema: JSONSchemaType<GovernanceRule> = {
+export const governanceRuleSchema = {
   type: 'object',
   required: [
     'id',
@@ -57,7 +56,7 @@ export const governanceRuleSchema: JSONSchemaType<GovernanceRule> = {
             type: 'string',
             enum: ['equals', 'contains', 'greater_than', 'less_than', 'regex'],
           },
-          value: {},
+          value: { type: 'string', nullable: true },
         },
       },
     },

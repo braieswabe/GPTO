@@ -26,8 +26,8 @@ export interface ATSCandidate {
  */
 export async function fetchATSJobs(
   provider: ATSProvider,
-  apiKey: string,
-  filters?: Record<string, unknown>
+  _apiKey: string,
+  _filters?: Record<string, unknown>
 ): Promise<ATSJob[]> {
   // Placeholder - in production would use actual ATS APIs
   switch (provider) {
@@ -49,10 +49,10 @@ export async function fetchATSJobs(
  * Submit candidate to ATS
  */
 export async function submitToATS(
-  provider: ATSProvider,
-  apiKey: string,
-  candidate: ATSCandidate,
-  jobId: string
+  _provider: ATSProvider,
+  _apiKey: string,
+  _candidate: ATSCandidate,
+  _jobId: string
 ): Promise<{ success: boolean; applicationId?: string }> {
   // Placeholder - in production would use actual ATS APIs
   return {

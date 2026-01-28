@@ -17,8 +17,8 @@ export interface EmailMessage {
  */
 export async function sendEmail(
   provider: EmailProvider,
-  apiKey: string,
-  message: EmailMessage
+  _apiKey: string,
+  _message: EmailMessage
 ): Promise<{ success: boolean; messageId?: string }> {
   // Placeholder - in production would use actual email SDKs
   switch (provider) {

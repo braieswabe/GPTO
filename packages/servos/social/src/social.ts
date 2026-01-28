@@ -23,7 +23,7 @@ export interface SocialPost {
 export async function generateSocialPost(
   topic: string,
   platform: SocialPost['platform'],
-  tone?: string
+  tone?: 'professional' | 'conversational' | 'technical' | 'creative'
 ): Promise<SocialPost> {
   const contentType = platform === 'twitter' ? 'social_post' : 'social_post';
   

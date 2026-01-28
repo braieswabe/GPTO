@@ -38,7 +38,7 @@ export function generateCF_ID(inputs: FingerprintInputs): string {
  * Calculate Cognitive Trust Index (CTI)
  */
 export function calculateCTI(
-  cf_id: string,
+  _cf_id: string,
   currentBehavior: FingerprintInputs['behaviorPattern'],
   historicalBehavior?: FingerprintInputs['behaviorPattern']
 ): number {

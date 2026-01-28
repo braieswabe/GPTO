@@ -1,4 +1,3 @@
-import { JSONSchemaType } from 'ajv';
 
 /**
  * Site Configuration Schema
@@ -111,7 +110,7 @@ export interface SiteConfig {
   };
 }
 
-export const siteConfigSchema: JSONSchemaType<SiteConfig> = {
+export const siteConfigSchema = {
   type: 'object',
   required: ['panthera_blackbox'],
   properties: {
@@ -163,6 +162,7 @@ export const siteConfigSchema: JSONSchemaType<SiteConfig> = {
         authority_grove: {
           type: 'object',
           nullable: true,
+          required: [],
           properties: {
             node: {
               type: 'object',

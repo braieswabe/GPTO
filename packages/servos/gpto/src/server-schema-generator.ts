@@ -17,7 +17,7 @@ export interface SchemaGenerationOptions {
  */
 export function generateOrganizationSchema(
   config: SiteConfig['panthera_blackbox'],
-  options: SchemaGenerationOptions = {}
+  _options: SchemaGenerationOptions = {}
 ): Record<string, unknown> {
   const schema: Record<string, unknown> = {
     '@context': 'https://schema.org',
@@ -42,7 +42,7 @@ export function generateOrganizationSchema(
 /**
  * Generate LocalBusiness schema if geo data exists
  */
-export function generateLocalBusinessSchema(
+export function generateLocalBusinessSchemaFromConfig(
   config: SiteConfig['panthera_blackbox']
 ): Record<string, unknown> | null {
   if (!config.site.geo || config.site.geo.length === 0) {
@@ -71,9 +71,9 @@ export function generateAllSchemas(
   schemas.push(generateOrganizationSchema(config, options));
 
   // Generate LocalBusiness if geo data exists and tier allows it
-  const tier = options.tier || (config.tier as 'bronze' | 'silver' | 'gold') || 'bronze';
+  const tier = options.tier || 'bronze';
   if ((tier === 'silver' || tier === 'gold' || options.includeLocalBusiness) && config.site.geo) {
-    const localBusiness = generateLocalBusinessSchema(config);
+    const localBusiness = generateLocalBusinessSchemaFromConfig(config);
     if (localBusiness) {
       schemas.push(localBusiness);
     }

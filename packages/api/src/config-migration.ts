@@ -18,26 +18,6 @@ interface OldConfig {
   [key: string]: unknown;
 }
 
-interface NewConfig {
-  panthera_blackbox: {
-    version: string;
-    site: {
-      domain: string;
-      brand: string;
-      verticals: string[];
-      geo: string[];
-    };
-    telemetry: {
-      emit: boolean;
-      keys: string[];
-    };
-    policy: {
-      privacy_mode: 'anon' | 'full' | 'minimal';
-      log_level: 'basic' | 'detailed' | 'verbose';
-    };
-    [key: string]: unknown;
-  };
-}
 
 /**
  * Migrate old config structure to new schema format
@@ -51,10 +31,14 @@ export function migrateConfig(config: unknown): unknown {
   
   // Check if this is an old config that needs migration
   const needsMigration = 
-    oldConfig.panthera_blackbox?.telemetry?.enabled !== undefined ||
-    oldConfig.panthera_blackbox?.telemetry?.endpoint !== undefined ||
-    oldConfig.panthera_blackbox?.policy?.require_approval !== undefined ||
-    oldConfig.panthera_blackbox?.policy?.allow_rollback !== undefined;
+    oldConfig.panthera_blackbox?.telemetry && (
+      (oldConfig.panthera_blackbox.telemetry as { enabled?: boolean; endpoint?: string } | undefined)?.enabled !== undefined ||
+      (oldConfig.panthera_blackbox.telemetry as { enabled?: boolean; endpoint?: string } | undefined)?.endpoint !== undefined
+    ) ||
+    oldConfig.panthera_blackbox?.policy && (
+      (oldConfig.panthera_blackbox.policy as { require_approval?: boolean; allow_rollback?: boolean } | undefined)?.require_approval !== undefined ||
+      (oldConfig.panthera_blackbox.policy as { require_approval?: boolean; allow_rollback?: boolean } | undefined)?.allow_rollback !== undefined
+    );
 
   if (!needsMigration) {
     return config;
@@ -67,23 +51,23 @@ export function migrateConfig(config: unknown): unknown {
       ...oldConfig.panthera_blackbox,
       telemetry: {
         // Migrate old telemetry fields
-        emit: oldConfig.panthera_blackbox?.telemetry?.enabled ?? 
-              (oldConfig.panthera_blackbox?.telemetry?.emit ?? true),
-        keys: oldConfig.panthera_blackbox?.telemetry?.keys ?? 
-              (oldConfig.panthera_blackbox?.telemetry?.endpoint 
-                ? [oldConfig.panthera_blackbox.telemetry.endpoint]
+        emit: (oldConfig.panthera_blackbox?.telemetry as { enabled?: boolean; emit?: boolean; keys?: string[]; endpoint?: string } | undefined)?.enabled ?? 
+              ((oldConfig.panthera_blackbox?.telemetry as { enabled?: boolean; emit?: boolean; keys?: string[]; endpoint?: string } | undefined)?.emit ?? true),
+        keys: (oldConfig.panthera_blackbox?.telemetry as { enabled?: boolean; emit?: boolean; keys?: string[]; endpoint?: string } | undefined)?.keys ?? 
+              ((oldConfig.panthera_blackbox?.telemetry as { enabled?: boolean; emit?: boolean; keys?: string[]; endpoint?: string } | undefined)?.endpoint 
+                ? [((oldConfig.panthera_blackbox?.telemetry as { enabled?: boolean; emit?: boolean; keys?: string[]; endpoint?: string } | undefined)?.endpoint || '')]
                 : []),
         // Preserve any other telemetry fields
         ...(oldConfig.panthera_blackbox?.telemetry || {}),
       },
       policy: {
         // Migrate old policy fields
-        privacy_mode: oldConfig.panthera_blackbox?.policy?.privacy_mode ?? 
-                     (oldConfig.panthera_blackbox?.policy?.require_approval 
+        privacy_mode: (oldConfig.panthera_blackbox?.policy as { privacy_mode?: 'anon' | 'full' | 'minimal'; require_approval?: boolean; allow_rollback?: boolean; log_level?: 'basic' | 'detailed' | 'verbose' } | undefined)?.privacy_mode ?? 
+                     ((oldConfig.panthera_blackbox?.policy as { privacy_mode?: 'anon' | 'full' | 'minimal'; require_approval?: boolean; allow_rollback?: boolean; log_level?: 'basic' | 'detailed' | 'verbose' } | undefined)?.require_approval 
                        ? 'full' 
                        : 'anon') as 'anon' | 'full' | 'minimal',
-        log_level: oldConfig.panthera_blackbox?.policy?.log_level ?? 
-                  (oldConfig.panthera_blackbox?.policy?.allow_rollback 
+        log_level: (oldConfig.panthera_blackbox?.policy as { privacy_mode?: 'anon' | 'full' | 'minimal'; require_approval?: boolean; allow_rollback?: boolean; log_level?: 'basic' | 'detailed' | 'verbose' } | undefined)?.log_level ?? 
+                  ((oldConfig.panthera_blackbox?.policy as { privacy_mode?: 'anon' | 'full' | 'minimal'; require_approval?: boolean; allow_rollback?: boolean; log_level?: 'basic' | 'detailed' | 'verbose' } | undefined)?.allow_rollback 
                     ? 'detailed' 
                     : 'basic') as 'basic' | 'detailed' | 'verbose',
         // Preserve any other policy fields

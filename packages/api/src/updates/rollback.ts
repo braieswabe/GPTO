@@ -1,5 +1,4 @@
-import { db } from '@gpto/database';
-import { configVersions, updateHistory, rollbackPoints } from '@gpto/database/src/schema';
+import { db, configVersions, updateHistory } from '@gpto/database';
 import { eq, and } from 'drizzle-orm';
 
 /**
@@ -90,7 +89,7 @@ export async function getRollbackPoints(siteId: string, limit = 10) {
     .orderBy(configVersions.createdAt)
     .limit(limit);
 
-  return versions.map((v) => ({
+  return versions.map((v: { version: string; createdAt: Date | null; isActive: boolean | null }) => ({
     version: v.version,
     createdAt: v.createdAt,
     isActive: v.isActive,

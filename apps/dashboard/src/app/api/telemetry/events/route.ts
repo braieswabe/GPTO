@@ -53,6 +53,31 @@ export async function POST(request: NextRequest) {
     // #endregion
     
     const body = await request.json();
+
+    const enrichedBody = { ...body } as Record<string, unknown>;
+    const context = (body?.context as Record<string, unknown> | undefined) || undefined;
+    if (!enrichedBody.event_type && typeof context?.event_type === 'string') {
+      enrichedBody.event_type = context.event_type;
+    }
+    const allowedEventTypes = new Set(['page_view', 'interaction', 'search', 'custom']);
+    if (!enrichedBody.event_type || !allowedEventTypes.has(String(enrichedBody.event_type))) {
+      enrichedBody.event_type = 'custom';
+    }
+    if (!enrichedBody.session_id && context?.session_id) {
+      enrichedBody.session_id = String(context.session_id);
+    }
+    if (!enrichedBody.page && (context?.url || context?.path || context?.title)) {
+      enrichedBody.page = {
+        url: typeof context?.url === 'string' ? context.url : undefined,
+        path: typeof context?.path === 'string' ? context.path : undefined,
+        title: typeof context?.title === 'string' ? context.title : undefined,
+      };
+    }
+    if (!enrichedBody.search && context?.search_query) {
+      enrichedBody.search = {
+        query: typeof context.search_query === 'string' ? context.search_query : undefined,
+      };
+    }
     
     // #region agent log
     fetch('http://127.0.0.1:7251/ingest/f2bef142-91a5-4d7a-be78-4c2383eb5638',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'api/telemetry/events/route.ts:30',message:'Request body parsed',data:{hasBody:!!body,bodyKeys:body?Object.keys(body):[],hasSchema:!!body?.schema,hasTenant:!!body?.tenant,hasMetrics:!!body?.metrics},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'B'})}).catch(()=>{});
@@ -63,7 +88,7 @@ export async function POST(request: NextRequest) {
     fetch('http://127.0.0.1:7251/ingest/f2bef142-91a5-4d7a-be78-4c2383eb5638',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'api/telemetry/events/route.ts:30',message:'Before validation',data:{},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'C'})}).catch(()=>{});
     // #endregion
     
-    const isValid = validator.validate(telemetryEventSchema, body);
+    const isValid = validator.validate(telemetryEventSchema, enrichedBody);
     
     // #region agent log
     fetch('http://127.0.0.1:7251/ingest/f2bef142-91a5-4d7a-be78-4c2383eb5638',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'api/telemetry/events/route.ts:32',message:'Validation result',data:{isValid,errors:validator.getErrors()},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'C'})}).catch(()=>{});
@@ -83,7 +108,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const event = body as typeof telemetryEventSchema.$infer;
+    const event = enrichedBody as typeof telemetryEventSchema.$infer;
 
     // Find site by tenant/domain
     // The tenant field should match the site's domain
@@ -153,6 +178,10 @@ export async function POST(request: NextRequest) {
         tenant: event.tenant,
         timestamp: new Date(event.timestamp),
         source: event.source,
+        eventType: event.event_type,
+        sessionId: event.session_id || null,
+        page: event.page || null,
+        search: event.search || null,
         context: event.context || null,
         metrics: event.metrics,
         edges: event.edges || null,

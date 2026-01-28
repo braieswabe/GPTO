@@ -6,6 +6,7 @@ import Link from 'next/link';
 import { ProtectedRoute } from '@/components/ProtectedRoute';
 import { UserRole } from '@gpto/shared';
 import { useAuth } from '@/contexts/AuthContext';
+import { ScoringMethodology } from '@/components/ScoringMethodology';
 
 function getTimeAgo(date: Date): string {
   const seconds = Math.floor((new Date().getTime() - date.getTime()) / 1000);
@@ -26,79 +27,153 @@ interface DashboardSite {
   updatedAt?: string | null;
 }
 
+interface TelemetrySummary {
+  totals: {
+    visits: number;
+    pageViews: number;
+    searches: number;
+    interactions: number;
+  };
+  trend: {
+    visits: number;
+    pageViews: number;
+    searches: number;
+    interactions: number;
+  };
+  topPages: Array<{ url: string; count: number }>;
+  topIntents: Array<{ intent: string; count: number }>;
+}
+
+interface ConfusionSummary {
+  totals: {
+    repeatedSearches: number;
+    deadEnds: number;
+    dropOffs: number;
+    intentMismatches: number;
+  };
+  signals: {
+    repeatedSearches: Array<{ query: string; count: number; sessionId: string }>;
+    deadEnds: Array<{ url: string; at: string; sessionId: string }>;
+    dropOffs: Array<{ sessionId: string; lastEvent: string }>;
+    intentMismatches: Array<{ url: string; intent: string; expected: string }>;
+  };
+  confidence: { level: string; score: number };
+}
+
+interface AuthoritySummary {
+  authorityScore: number;
+  trustSignals: Array<{ label: string; value: number }>;
+  confidenceGaps: string[];
+  blockers: string[];
+  confidence: { level: string; score: number };
+}
+
+interface SchemaSummary {
+  completenessScore: number;
+  qualityScore: number;
+  missing: number;
+  broken: number;
+  templates: Array<{ name: string; status: string }>;
+}
+
+interface CoverageSummary {
+  totals: {
+    contentGaps: number;
+    missingFunnelStages: number;
+    missingIntents: number;
+    priorityFixes: number;
+  };
+  gaps: Array<{ label: string; detail: string; severity: string }>;
+  missingStages: string[];
+  missingIntents: string[];
+  confidence: { level: string; score: number };
+}
+
+interface DashboardIndexEntry {
+  id: string;
+  name: string;
+  status: string;
+  dataConnected: boolean;
+  lastUpdate: string | null;
+  confidence: string;
+}
+
+interface ExecutiveSummary {
+  insights: Array<{ question: string; answer: string | null }>;
+}
+
 interface DashboardData {
   sites: number;
   sitesList: DashboardSite[];
-  telemetryEvents: number;
-  updates: number;
-  authorityDelta: number;
-  aiSearchScore: number;
-  recentActivities: Array<{
-    type: 'telemetry' | 'update' | 'audit';
-    id: string;
-    siteId: string;
-    siteDomain?: string;
-    timestamp: string;
-    description: string;
-  }>;
+  telemetry: TelemetrySummary | null;
+  confusion: ConfusionSummary | null;
+  authority: AuthoritySummary | null;
+  schema: SchemaSummary | null;
+  coverage: CoverageSummary | null;
+  dashboardIndex: DashboardIndexEntry[];
+  executiveSummary: ExecutiveSummary | null;
 }
 
-async function fetchDashboardData(): Promise<DashboardData> {
+async function fetchDashboardData(range: '7d' | '30d' | 'custom'): Promise<DashboardData> {
   try {
     const token = localStorage.getItem('token') || '';
     const headers = {
       Authorization: `Bearer ${token}`,
     };
 
-    const sitesResponse = await fetch('/api/sites', { headers });
-    const sitesData = sitesResponse.ok ? await sitesResponse.json() : { data: [] };
-    const sitesList: DashboardSite[] = sitesData.data || [];
+    const fetchJson = async <T,>(url: string): Promise<T | null> => {
+      const response = await fetch(url, { headers });
+      if (!response.ok) return null;
+      return response.json();
+    };
+
+    const rangeParam = `range=${range}`;
+
+    const [
+      sitesData,
+      telemetryData,
+      confusionData,
+      authorityData,
+      schemaData,
+      coverageData,
+      indexData,
+      executiveData,
+    ] = await Promise.all([
+      fetchJson<{ data: DashboardSite[] }>('/api/sites'),
+      fetchJson<TelemetrySummary>(`/api/dashboard/telemetry?${rangeParam}`),
+      fetchJson<ConfusionSummary>(`/api/dashboard/confusion?${rangeParam}`),
+      fetchJson<AuthoritySummary>(`/api/dashboard/authority?${rangeParam}`),
+      fetchJson<SchemaSummary>(`/api/dashboard/schema?${rangeParam}`),
+      fetchJson<CoverageSummary>(`/api/dashboard/coverage?${rangeParam}`),
+      fetchJson<{ dashboards: DashboardIndexEntry[] }>(`/api/dashboard/index?${rangeParam}`),
+      fetchJson<ExecutiveSummary>(`/api/dashboard/executive-summary?${rangeParam}`),
+    ]);
+
+    const sitesList: DashboardSite[] = sitesData?.data || [];
     const sitesCount = sitesList.length;
-
-    const statsResponse = await fetch('/api/dashboard/stats', { headers });
-    const statsData = statsResponse.ok
-      ? await statsResponse.json()
-      : {
-          telemetryEvents: 0,
-          updates: 0,
-          authorityDelta: 0,
-          recentActivities: [],
-        };
-
-    let aiSearchScore = 0;
-    if (sitesCount > 0 && sitesList.length > 0) {
-      try {
-        const firstSiteId = sitesList[0]?.id;
-        if (firstSiteId) {
-          const aiSearchResponse = await fetch(`/api/metrics/ai-search?siteId=${firstSiteId}`, { headers });
-          if (aiSearchResponse.ok) {
-            const aiSearchData = await aiSearchResponse.json();
-            aiSearchScore = aiSearchData.score || 0;
-          }
-        }
-      } catch {
-        // Ignore errors, use default
-      }
-    }
 
     return {
       sites: sitesCount,
       sitesList,
-      telemetryEvents: statsData.telemetryEvents || 0,
-      updates: statsData.updates || 0,
-      authorityDelta: statsData.authorityDelta || 0,
-      aiSearchScore,
-      recentActivities: statsData.recentActivities || [],
+      telemetry: telemetryData,
+      confusion: confusionData,
+      authority: authorityData,
+      schema: schemaData,
+      coverage: coverageData,
+      dashboardIndex: indexData?.dashboards || [],
+      executiveSummary: executiveData,
     };
   } catch {
     return {
       sites: 0,
       sitesList: [],
-      telemetryEvents: 0,
-      updates: 0,
-      authorityDelta: 0,
-      aiSearchScore: 0,
-      recentActivities: [],
+      telemetry: null,
+      confusion: null,
+      authority: null,
+      schema: null,
+      coverage: null,
+      dashboardIndex: [],
+      executiveSummary: null,
     };
   }
 }
@@ -120,26 +195,33 @@ function NoDataState({ helper }: { helper?: string }) {
 function DashboardContent() {
   const { user } = useAuth();
   const currentUserRole: UserRole = (user?.role as UserRole) || 'viewer';
+  const [timeRange, setTimeRange] = useState<'7d' | '30d' | 'custom'>('30d');
+  const [demoMode, setDemoMode] = useState(false);
+  const [selectedTenant, setSelectedTenant] = useState('Primary');
+  const canUseDemo = currentUserRole === 'admin';
+
   const { data, isLoading } = useQuery({
-    queryKey: ['dashboard'],
-    queryFn: fetchDashboardData,
+    queryKey: ['dashboard', timeRange],
+    queryFn: () => fetchDashboardData(timeRange),
     refetchInterval: 30000,
   });
 
-  const [demoMode, setDemoMode] = useState(false);
-  const [timeRange, setTimeRange] = useState<'7d' | '30d' | 'custom'>('30d');
-  const [selectedTenant, setSelectedTenant] = useState('Primary');
-
   useEffect(() => {
+    if (!canUseDemo) {
+      setDemoMode(false);
+      return;
+    }
+
     const stored = localStorage.getItem('dashboardDemoMode');
     if (stored) {
       setDemoMode(stored === 'true');
     }
-  }, []);
+  }, [canUseDemo]);
 
   useEffect(() => {
+    if (!canUseDemo) return;
     localStorage.setItem('dashboardDemoMode', String(demoMode));
-  }, [demoMode]);
+  }, [demoMode, canUseDemo]);
 
   if (isLoading) {
     return (
@@ -166,45 +248,140 @@ function DashboardContent() {
   const demoData: DashboardData = {
     sites: demoSites.length,
     sitesList: demoSites,
-    telemetryEvents: 48210,
-    updates: 14,
-    authorityDelta: 4.2,
-    aiSearchScore: 78,
-    recentActivities: [
+    telemetry: {
+      totals: { visits: 48210, pageViews: 61200, searches: 3200, interactions: 14800 },
+      trend: { visits: 0.12, pageViews: 0.08, searches: 0.18, interactions: 0.05 },
+      topPages: [
+        { url: 'https://northwind.com/pricing', count: 8200 },
+        { url: 'https://northwind.com/solutions', count: 6400 },
+        { url: 'https://northwind.com/docs', count: 4200 },
+      ],
+      topIntents: [
+        { intent: 'pricing', count: 1800 },
+        { intent: 'demo', count: 1200 },
+        { intent: 'docs', count: 900 },
+      ],
+    },
+    confusion: {
+      totals: { repeatedSearches: 18, deadEnds: 7, dropOffs: 12, intentMismatches: 5 },
+      signals: {
+        repeatedSearches: [{ query: 'refund policy', count: 3, sessionId: 'demo-session-1' }],
+        deadEnds: [{ url: 'https://northwind.com/refund', at: new Date().toISOString(), sessionId: 'demo-session-2' }],
+        dropOffs: [{ sessionId: 'demo-session-3', lastEvent: new Date().toISOString() }],
+        intentMismatches: [{ url: 'https://northwind.com/docs', intent: 'pricing', expected: 'docs' }],
+      },
+      confidence: { level: 'Medium', score: 62 },
+    },
+    authority: {
+      authorityScore: 74,
+      trustSignals: [
+        { label: 'Trust content', value: 68 },
+        { label: 'Structured data', value: 82 },
+      ],
+      confidenceGaps: ['Authority signals are below target range.'],
+      blockers: ['Schema completeness is limiting trust lift.'],
+      confidence: { level: 'Medium', score: 58 },
+    },
+    schema: {
+      completenessScore: 78,
+      qualityScore: 74,
+      missing: 12,
+      broken: 2,
+      templates: [
+        { name: 'Organization', status: 'available' },
+        { name: 'Product', status: 'available' },
+        { name: 'FAQ', status: 'available' },
+        { name: 'Service', status: 'available' },
+      ],
+    },
+    coverage: {
+      totals: { contentGaps: 9, missingFunnelStages: 2, missingIntents: 11, priorityFixes: 4 },
+      gaps: [
+        { label: 'Missing funnel stages', detail: 'Coverage missing for retention, decision.', severity: 'high' },
+      ],
+      missingStages: ['retention', 'decision'],
+      missingIntents: ['integration', 'security'],
+      confidence: { level: 'Medium', score: 60 },
+    },
+    dashboardIndex: [
       {
-        type: 'telemetry',
-        id: 'demo-activity-1',
-        siteId: demoSites[0].id,
-        siteDomain: demoSites[0].domain,
-        timestamp: new Date(Date.now() - 1000 * 60 * 42).toISOString(),
-        description: 'Telemetry spike on pricing page',
+        id: 'telemetry',
+        name: 'Telemetry',
+        status: 'Active',
+        dataConnected: true,
+        lastUpdate: new Date(Date.now() - 1000 * 60 * 42).toISOString(),
+        confidence: 'High',
       },
       {
-        type: 'audit',
-        id: 'demo-activity-2',
-        siteId: demoSites[1].id,
-        siteDomain: demoSites[1].domain,
-        timestamp: new Date(Date.now() - 1000 * 60 * 140).toISOString(),
-        description: 'Authority audit completed',
+        id: 'confusion',
+        name: 'Confusion & mismatch',
+        status: 'Active',
+        dataConnected: true,
+        lastUpdate: new Date(Date.now() - 1000 * 60 * 80).toISOString(),
+        confidence: 'Medium',
       },
       {
-        type: 'update',
-        id: 'demo-activity-3',
-        siteId: demoSites[2].id,
-        siteDomain: demoSites[2].domain,
-        timestamp: new Date(Date.now() - 1000 * 60 * 280).toISOString(),
-        description: 'Schema template updated',
+        id: 'authority',
+        name: 'Authority & trust',
+        status: 'Active',
+        dataConnected: true,
+        lastUpdate: new Date(Date.now() - 1000 * 60 * 120).toISOString(),
+        confidence: 'Medium',
+      },
+      {
+        id: 'schema',
+        name: 'Schema & structure',
+        status: 'Active',
+        dataConnected: true,
+        lastUpdate: new Date(Date.now() - 1000 * 60 * 200).toISOString(),
+        confidence: 'High',
+      },
+      {
+        id: 'coverage',
+        name: 'Coverage & gaps',
+        status: 'Active',
+        dataConnected: true,
+        lastUpdate: new Date(Date.now() - 1000 * 60 * 240).toISOString(),
+        confidence: 'Medium',
       },
     ],
+    executiveSummary: {
+      insights: [
+        {
+          question: 'What\'s working?',
+          answer: 'Pricing and onboarding pages drive 62% of conversions with consistent intent match.',
+        },
+        {
+          question: 'What\'s broken?',
+          answer: 'Refund-policy searches hit dead ends on three pages, causing drop-offs.',
+        },
+        {
+          question: 'What should we change?',
+          answer: 'Clarify plan limits on pricing and add trust proof on checkout.',
+        },
+        {
+          question: 'What should we stop?',
+          answer: 'Stop promoting deprecated integration docs that generate mismatched intent.',
+        },
+        {
+          question: 'What should we double down on or sell?',
+          answer: 'Double down on industry pages with high authority lift and low confusion.',
+        },
+      ],
+    },
   };
 
   const resolvedData = demoMode ? demoData : data;
   const sitesList = resolvedData?.sitesList ?? [];
   const hasSites = sitesList.length > 0;
-  const telemetryEvents = resolvedData?.telemetryEvents ?? 0;
-  const hasTelemetryData = telemetryEvents > 0;
-  const latestActivity = resolvedData?.recentActivities?.[0];
-  const lastUpdateLabel = latestActivity ? getTimeAgo(new Date(latestActivity.timestamp)) : 'No data yet';
+  const telemetry = resolvedData?.telemetry;
+  const confusion = resolvedData?.confusion;
+  const authority = resolvedData?.authority;
+  const schema = resolvedData?.schema;
+  const coverage = resolvedData?.coverage;
+  const executiveSummary = resolvedData?.executiveSummary;
+  const dashboardIndex = resolvedData?.dashboardIndex ?? [];
+  const indexMap = new Map(dashboardIndex.map((entry) => [entry.id, entry]));
 
   const tenantOptions = demoMode ? ['Northwind', 'Atlas', 'Primary'] : ['Primary'];
   const statusStyles: Record<string, string> = {
@@ -220,165 +397,118 @@ function DashboardContent() {
     Unknown: 'text-gray-500',
   };
 
-  const dashboardCards = demoMode
-    ? [
-        {
-          id: 'telemetry',
-          name: 'Telemetry',
-          description: 'What people are doing once data exists.',
-          status: 'Active',
-          dataConnected: true,
-          lastUpdate: lastUpdateLabel,
-          confidence: 'High',
-          highlights: [
-            { label: 'Visits', value: '48.2k' },
-            { label: 'Top pages', value: '12' },
-            { label: 'Search intents', value: '36' },
-            { label: 'Trend', value: '+12% WoW' },
-          ],
-        },
-        {
-          id: 'confusion',
-          name: 'Confusion & mismatch',
-          description: 'Where users get stuck, loop, or bounce.',
-          status: 'Active',
-          dataConnected: true,
-          lastUpdate: lastUpdateLabel,
-          confidence: 'Medium',
-          highlights: [
-            { label: 'Repeated searches', value: '18' },
-            { label: 'Dead ends', value: '7' },
-            { label: 'Drop-offs', value: '14%' },
-            { label: 'Intent mismatches', value: '5' },
-          ],
-        },
-        {
-          id: 'authority',
-          name: 'Authority & trust',
-          description: 'Trust signals, confidence gaps, and blockers.',
-          status: 'Active',
-          dataConnected: true,
-          lastUpdate: lastUpdateLabel,
-          confidence: 'Medium',
-          highlights: [
-            { label: 'Trust signals', value: '24' },
-            { label: 'Confidence gaps', value: '6' },
-            { label: 'Conversion blockers', value: '3' },
-            { label: 'Authority Δ', value: '+4.2' },
-          ],
-        },
-        {
-          id: 'schema',
-          name: 'Schema & structure',
-          description: 'Structured data coverage and breakage.',
-          status: 'Active',
-          dataConnected: true,
-          lastUpdate: lastUpdateLabel,
-          confidence: 'High',
-          highlights: [
-            { label: 'Structured types', value: '8' },
-            { label: 'Missing', value: '12' },
-            { label: 'Broken', value: '2' },
-            { label: 'Templates', value: '5' },
-          ],
-        },
-        {
-          id: 'coverage',
-          name: 'Coverage & gaps',
-          description: 'Missing content and funnel stages.',
-          status: 'Active',
-          dataConnected: true,
-          lastUpdate: lastUpdateLabel,
-          confidence: 'Medium',
-          highlights: [
-            { label: 'Content gaps', value: '9' },
-            { label: 'Missing funnel stages', value: '2' },
-            { label: 'Incomplete intents', value: '11' },
-            { label: 'Priority fixes', value: '4' },
-          ],
-        },
-      ]
-    : [
-        {
-          id: 'telemetry',
-          name: 'Telemetry',
-          description: 'What people are doing once data exists.',
-          status: hasTelemetryData ? 'Active' : hasSites ? 'Waiting' : 'Inactive',
-          dataConnected: hasTelemetryData,
-          lastUpdate: hasTelemetryData ? lastUpdateLabel : 'No data yet',
-          confidence: hasTelemetryData ? 'Medium' : 'Unknown',
-          highlights: hasTelemetryData
-            ? [
-                { label: 'Telemetry events', value: telemetryEvents.toLocaleString() },
-                { label: 'Sites reporting', value: resolvedData?.sites?.toString() ?? '0' },
-              ]
-            : [],
-        },
-        {
-          id: 'confusion',
-          name: 'Confusion & mismatch',
-          description: 'Where users get stuck, loop, or bounce.',
-          status: hasSites ? 'Waiting' : 'Inactive',
-          dataConnected: hasSites,
-          lastUpdate: 'No data yet',
-          confidence: 'Unknown',
-          highlights: [],
-        },
-        {
-          id: 'authority',
-          name: 'Authority & trust',
-          description: 'Trust signals, confidence gaps, and blockers. No hype, just bounded explanations.',
-          status: hasSites ? 'Waiting' : 'Inactive',
-          dataConnected: hasSites,
-          lastUpdate: 'No data yet',
-          confidence: 'Unknown',
-          highlights: [],
-        },
-        {
-          id: 'schema',
-          name: 'Schema & structure',
-          description: 'Structured data coverage and breakage.',
-          status: hasSites ? 'Waiting' : 'Inactive',
-          dataConnected: hasSites,
-          lastUpdate: 'No data yet',
-          confidence: 'Unknown',
-          highlights: [],
-        },
-        {
-          id: 'coverage',
-          name: 'Coverage & gaps',
-          description: 'Missing content and funnel stages.',
-          status: hasSites ? 'Waiting' : 'Inactive',
-          dataConnected: hasSites,
-          lastUpdate: 'No data yet',
-          confidence: 'Unknown',
-          highlights: [],
-        },
-      ];
+  const formatTrend = (value: number) => `${value >= 0 ? '+' : ''}${Math.round(value * 100)}%`;
 
-  const executiveQuestions = demoMode
+  const resolveDashboardMeta = (id: string) => {
+    const entry = indexMap.get(id);
+    if (entry) {
+      return {
+        status: entry.status,
+        dataConnected: entry.dataConnected,
+        lastUpdate: entry.lastUpdate ? getTimeAgo(new Date(entry.lastUpdate)) : 'No data yet',
+        confidence: entry.confidence || 'Unknown',
+      };
+    }
+    return {
+      status: hasSites ? 'Waiting' : 'Inactive',
+      dataConnected: false,
+      lastUpdate: 'No data yet',
+      confidence: 'Unknown',
+    };
+  };
+
+  const telemetryHighlights = telemetry && telemetry.totals.pageViews > 0
     ? [
-        {
-          title: "What's working?",
-          answer: 'Pricing and onboarding pages drive 62% of conversions with consistent intent match.',
-        },
-        {
-          title: "What's broken?",
-          answer: 'Refund-policy searches hit dead ends on three pages, causing drop-offs.',
-        },
-        {
-          title: 'What should we change?',
-          answer: 'Clarify plan limits on pricing and add trust proof on checkout.',
-        },
-        {
-          title: 'What should we stop?',
-          answer: 'Stop promoting deprecated integration docs that generate mismatched intent.',
-        },
-        {
-          title: 'What should we double down on or sell?',
-          answer: 'Double down on industry pages with high authority lift and low confusion.',
-        },
+        { label: 'Visits', value: telemetry.totals.visits.toLocaleString() },
+        { label: 'Top pages', value: telemetry.topPages.length.toString() },
+        { label: 'Search intents', value: telemetry.topIntents.length.toString() },
+        { label: 'Trend', value: formatTrend(telemetry.trend.visits) },
       ]
+    : [];
+
+  const confusionTotalCount = confusion
+    ? confusion.totals.repeatedSearches + confusion.totals.deadEnds + confusion.totals.dropOffs + confusion.totals.intentMismatches
+    : 0;
+
+  const confusionHighlights = confusion && confusionTotalCount > 0
+    ? [
+        { label: 'Repeated searches', value: confusion.totals.repeatedSearches.toString() },
+        { label: 'Dead ends', value: confusion.totals.deadEnds.toString() },
+        { label: 'Drop-offs', value: confusion.totals.dropOffs.toString() },
+        { label: 'Intent mismatches', value: confusion.totals.intentMismatches.toString() },
+      ]
+    : [];
+
+  const authorityHighlights = authority && authority.authorityScore > 0
+    ? [
+        { label: 'Authority score', value: `${authority.authorityScore}/100` },
+        { label: 'Trust signals', value: authority.trustSignals.length.toString() },
+        { label: 'Confidence gaps', value: authority.confidenceGaps.length.toString() },
+        { label: 'Blockers', value: authority.blockers.length.toString() },
+      ]
+    : [];
+
+  const schemaHighlights = schema && (schema.completenessScore > 0 || schema.qualityScore > 0)
+    ? [
+        { label: 'Completeness', value: `${schema.completenessScore}/100` },
+        { label: 'Missing', value: schema.missing.toString() },
+        { label: 'Broken', value: schema.broken.toString() },
+        { label: 'Templates', value: schema.templates.length.toString() },
+      ]
+    : [];
+
+  const coverageHighlights = coverage && coverage.totals.contentGaps > 0
+    ? [
+        { label: 'Content gaps', value: coverage.totals.contentGaps.toString() },
+        { label: 'Missing funnel stages', value: coverage.totals.missingFunnelStages.toString() },
+        { label: 'Incomplete intents', value: coverage.totals.missingIntents.toString() },
+        { label: 'Priority fixes', value: coverage.totals.priorityFixes.toString() },
+      ]
+    : [];
+
+  const dashboardCards = [
+    {
+      id: 'telemetry',
+      name: 'Telemetry',
+      description: 'What people are doing once data exists.',
+      highlights: telemetryHighlights,
+      ...resolveDashboardMeta('telemetry'),
+    },
+    {
+      id: 'confusion',
+      name: 'Confusion & mismatch',
+      description: 'Where users get stuck, loop, or bounce.',
+      highlights: confusionHighlights,
+      ...resolveDashboardMeta('confusion'),
+    },
+    {
+      id: 'authority',
+      name: 'Authority & trust',
+      description: 'Trust signals, confidence gaps, and blockers.',
+      highlights: authorityHighlights,
+      ...resolveDashboardMeta('authority'),
+    },
+    {
+      id: 'schema',
+      name: 'Schema & structure',
+      description: 'Structured data coverage and breakage.',
+      highlights: schemaHighlights,
+      ...resolveDashboardMeta('schema'),
+    },
+    {
+      id: 'coverage',
+      name: 'Coverage & gaps',
+      description: 'Missing content and funnel stages.',
+      highlights: coverageHighlights,
+      ...resolveDashboardMeta('coverage'),
+    },
+  ];
+
+  const executiveQuestions = executiveSummary?.insights?.length
+    ? executiveSummary.insights.map((insight) => ({
+        title: insight.question,
+        answer: insight.answer || undefined,
+      }))
     : [
         { title: "What's working?" },
         { title: "What's broken?" },
@@ -387,79 +517,130 @@ function DashboardContent() {
         { title: 'What should we double down on or sell?' },
       ];
 
-  const signalChips = demoMode
-    ? [
-        { label: 'Telemetry', status: 'Strong', detail: 'High signal' },
-        { label: 'Confusion', status: 'Watch', detail: 'Rising loops' },
-        { label: 'Authority', status: 'Watch', detail: 'Trust gaps' },
-        { label: 'Schema', status: 'Strong', detail: 'Clean coverage' },
-        { label: 'Coverage', status: 'Watch', detail: 'Missing stages' },
-      ]
-    : [
-        { label: 'Telemetry', status: 'Idle', detail: 'No data yet' },
-        { label: 'Confusion', status: 'Idle', detail: 'No data yet' },
-        { label: 'Authority', status: 'Idle', detail: 'No data yet' },
-        { label: 'Schema', status: 'Idle', detail: 'No data yet' },
-        { label: 'Coverage', status: 'Idle', detail: 'No data yet' },
-      ];
+  const mapConfidenceToStatus = (confidence?: string): 'Strong' | 'Watch' | 'Idle' | 'Weak' => {
+    if (confidence === 'High') return 'Strong';
+    if (confidence === 'Medium') return 'Watch';
+    if (confidence === 'Low') return 'Weak';
+    return 'Idle';
+  };
 
-  const pulseCards = demoMode
-    ? [
-        {
+  const signalChips = [
+    {
+      label: 'Telemetry',
+      status: mapConfidenceToStatus(indexMap.get('telemetry')?.confidence),
+      detail: telemetry ? `${telemetry.totals.pageViews.toLocaleString()} views` : 'No data yet',
+    },
+    {
+      label: 'Confusion',
+      status: mapConfidenceToStatus(indexMap.get('confusion')?.confidence),
+      detail: confusion ? `${confusion.totals.deadEnds} dead ends` : 'No data yet',
+    },
+    {
+      label: 'Authority',
+      status: mapConfidenceToStatus(indexMap.get('authority')?.confidence),
+      detail: authority ? `Score ${authority.authorityScore}/100` : 'No data yet',
+    },
+    {
+      label: 'Schema',
+      status: mapConfidenceToStatus(indexMap.get('schema')?.confidence),
+      detail: schema ? `Completeness ${schema.completenessScore}/100` : 'No data yet',
+    },
+    {
+      label: 'Coverage',
+      status: mapConfidenceToStatus(indexMap.get('coverage')?.confidence),
+      detail: coverage ? `${coverage.totals.contentGaps} gaps` : 'No data yet',
+    },
+  ];
+
+  const frictionTotal = confusion
+    ? confusion.totals.repeatedSearches + confusion.totals.deadEnds + confusion.totals.dropOffs
+    : 0;
+  const experienceHealth = confusion ? Math.max(0, 100 - Math.min(100, frictionTotal * 2)) : null;
+  const coverageRisk = coverage
+    ? coverage.totals.priorityFixes > 3
+      ? 'High'
+      : coverage.totals.missingFunnelStages > 0
+        ? 'Medium'
+        : 'Low'
+    : null;
+
+  const pulseCards = [
+    telemetry && telemetry.totals.visits > 0
+      ? {
           title: 'Revenue impact',
-          value: '+$320k',
-          helper: 'Attributable to intent-aligned pages',
-          trend: '+8% MoM',
-        },
-        {
+          value: formatTrend(telemetry.trend.visits),
+          helper: `${telemetry.totals.visits.toLocaleString()} visits in range`,
+          trend: `${formatTrend(telemetry.trend.visits)} vs prior period`,
+        }
+      : { title: 'Revenue impact' },
+    experienceHealth !== null
+      ? {
           title: 'Experience health',
-          value: '84/100',
-          helper: 'Drop-offs concentrated in checkout flow',
-          trend: '+3 pts',
-        },
-        {
+          value: `${experienceHealth}/100`,
+          helper: `${frictionTotal} friction signals detected`,
+          trend: `${confusion?.confidence.level || 'Low'} confidence`,
+        }
+      : { title: 'Experience health' },
+    authority && authority.authorityScore > 0
+      ? {
           title: 'Trust lift',
-          value: '+12%',
-          helper: 'Proof points added to top 3 pages',
-          trend: 'Stable',
-        },
-        {
+          value: `${authority.authorityScore}/100`,
+          helper: `${authority.trustSignals.length} trust signals tracked`,
+          trend: `${authority.confidence.level} confidence`,
+          scoringType: 'authority' as const,
+        }
+      : { title: 'Trust lift' },
+    coverageRisk
+      ? {
           title: 'Coverage risk',
-          value: 'Medium',
-          helper: 'Missing mid-funnel content',
-          trend: 'Needs focus',
-        },
-      ]
-    : [
-        { title: 'Revenue impact' },
-        { title: 'Experience health' },
-        { title: 'Trust lift' },
-        { title: 'Coverage risk' },
-      ];
+          value: coverageRisk,
+          helper: `${coverage?.totals.missingFunnelStages || 0} stages missing`,
+          trend: `${coverage?.confidence.level || 'Low'} confidence`,
+        }
+      : { title: 'Coverage risk' },
+  ];
 
-  const focusLanes = demoMode
-    ? [
-        {
-          title: 'Double down',
-          description: 'Strong signals to amplify.',
-          items: ['Pricing clarity', 'AI-ready product pages', 'Partner proof points'],
-        },
-        {
-          title: 'Fix now',
-          description: 'High friction moments.',
-          items: ['Refund policy dead ends', 'Search intent mismatch on docs', 'Broken schema on FAQ'],
-        },
-        {
-          title: 'Stop',
-          description: 'Work that is not paying off.',
-          items: ['Deprecated integration pages', 'Low-intent blog topics', 'Duplicated landing pages'],
-        },
-      ]
-    : [
-        { title: 'Double down', description: 'Strong signals to amplify.', items: [] },
-        { title: 'Fix now', description: 'High friction moments.', items: [] },
-        { title: 'Stop', description: 'Work that is not paying off.', items: [] },
-      ];
+  const doubleDownItems = telemetry?.topPages
+    ? telemetry.topPages.slice(0, 3).map((page) => page.url)
+    : [];
+  const fixNowItems = [
+    ...(coverage?.gaps || []).slice(0, 2).map((gap) => gap.label),
+    ...(confusion?.signals.deadEnds || []).slice(0, 1).map((item) => `Dead end: ${item.url}`),
+  ].filter(Boolean);
+  const stopItems = (confusion?.signals.repeatedSearches || [])
+    .slice(0, 3)
+    .map((item) => `Repeated search: ${item.query}`);
+
+  const focusLanes = [
+    {
+      title: 'Double down',
+      description: 'Strong signals to amplify.',
+      items: doubleDownItems,
+    },
+    {
+      title: 'Fix now',
+      description: 'High friction moments.',
+      items: fixNowItems,
+    },
+    {
+      title: 'Stop',
+      description: 'Work that is not paying off.',
+      items: stopItems,
+    },
+  ];
+
+  const handleExport = (format: 'pdf' | 'slides') => {
+    if (typeof window === 'undefined') return;
+    window.location.href = `/api/dashboard/export?format=${format}&range=${timeRange}`;
+  };
+
+  const momentumItems = telemetry?.topPages?.length
+    ? telemetry.topPages.slice(0, 4).map((page) => ({
+        label: page.url.replace(/^https?:\/\//, ''),
+        count: page.count,
+      }))
+    : [];
+  const momentumMax = momentumItems.reduce((max, item) => Math.max(max, item.count), 1);
 
   return (
     <div className="bg-gradient-to-br from-slate-50 via-white to-slate-100 min-h-screen">
@@ -488,27 +669,29 @@ function DashboardContent() {
                 Switch clients, pick the time window, and export exec-ready reports.
               </p>
             </div>
-            <div className="flex items-center gap-3 bg-gray-50 rounded-lg px-4 py-2 border border-gray-200">
-              <span className="text-xs uppercase tracking-wide text-gray-600 font-semibold">Demo mode</span>
-              <button
-                type="button"
-                onClick={() => setDemoMode((prev) => !prev)}
-                className={`relative inline-flex h-7 w-12 items-center rounded-full transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 ${
-                  demoMode ? 'bg-blue-600 shadow-lg shadow-blue-200' : 'bg-gray-300'
-                }`}
-                aria-pressed={demoMode}
-                aria-label="Toggle demo mode"
-              >
-                <span
-                  className={`inline-block h-5 w-5 transform rounded-full bg-white shadow-md transition-transform duration-200 ${
-                    demoMode ? 'translate-x-6' : 'translate-x-1'
+            {canUseDemo ? (
+              <div className="flex items-center gap-3 bg-gray-50 rounded-lg px-4 py-2 border border-gray-200">
+                <span className="text-xs uppercase tracking-wide text-gray-600 font-semibold">Demo mode</span>
+                <button
+                  type="button"
+                  onClick={() => setDemoMode((prev) => !prev)}
+                  className={`relative inline-flex h-7 w-12 items-center rounded-full transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 ${
+                    demoMode ? 'bg-blue-600 shadow-lg shadow-blue-200' : 'bg-gray-300'
                   }`}
-                />
-              </button>
-              <span className={`text-xs font-medium ${demoMode ? 'text-blue-700' : 'text-gray-600'}`}>
-                {demoMode ? 'Demo data' : 'Real data'}
-              </span>
-            </div>
+                  aria-pressed={demoMode}
+                  aria-label="Toggle demo mode"
+                >
+                  <span
+                    className={`inline-block h-5 w-5 transform rounded-full bg-white shadow-md transition-transform duration-200 ${
+                      demoMode ? 'translate-x-6' : 'translate-x-1'
+                    }`}
+                  />
+                </button>
+                <span className={`text-xs font-medium ${demoMode ? 'text-blue-700' : 'text-gray-600'}`}>
+                  {demoMode ? 'Demo data' : 'Real data'}
+                </span>
+              </div>
+            ) : null}
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
@@ -579,12 +762,14 @@ function DashboardContent() {
               <div className="flex gap-2">
                 <button
                   type="button"
+                  onClick={() => handleExport('pdf')}
                   className="flex-1 rounded-lg border border-gray-300 px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 hover:border-gray-400 transition-colors"
                 >
                   PDF
                 </button>
                 <button
                   type="button"
+                  onClick={() => handleExport('slides')}
                   className="flex-1 rounded-lg border border-gray-300 px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 hover:border-gray-400 transition-colors"
                 >
                   Slides
@@ -628,19 +813,22 @@ function DashboardContent() {
             {hasSites ? (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
                 {sitesList.map((site) => (
-                  <div key={site.id} className="rounded-lg border border-gray-200 bg-white p-4 hover:shadow-md hover:border-blue-300 transition-all group">
-                    <div className="flex items-center justify-between">
-                      <p className="text-sm font-semibold text-gray-900 truncate group-hover:text-blue-600 transition-colors">{site.domain}</p>
-                      <span className={`text-xs font-medium px-2 py-1 rounded-full ${
-                        site.status === 'active' 
-                          ? 'bg-emerald-100 text-emerald-700' 
-                          : 'bg-amber-100 text-amber-700'
-                      }`}>
-                        {site.status ? site.status : 'pending'}
-                      </span>
+                  <Link key={site.id} href={`/dashboard/reports/${site.id}`}>
+                    <div className="rounded-lg border border-gray-200 bg-white p-4 hover:shadow-md hover:border-blue-300 transition-all group cursor-pointer">
+                      <div className="flex items-center justify-between">
+                        <p className="text-sm font-semibold text-gray-900 truncate group-hover:text-blue-600 transition-colors">{site.domain}</p>
+                        <span className={`text-xs font-medium px-2 py-1 rounded-full ${
+                          site.status === 'active' 
+                            ? 'bg-emerald-100 text-emerald-700' 
+                            : 'bg-amber-100 text-amber-700'
+                        }`}>
+                          {site.status ? site.status : 'pending'}
+                        </span>
+                      </div>
+                      <p className="mt-2 text-xs text-gray-500">Tenant: {selectedTenant}</p>
+                      <p className="mt-1 text-xs text-blue-600 group-hover:text-blue-700">View Report →</p>
                     </div>
-                    <p className="mt-2 text-xs text-gray-500">Tenant: {selectedTenant}</p>
-                  </div>
+                  </Link>
                 ))}
               </div>
             ) : (
@@ -705,27 +893,25 @@ function DashboardContent() {
               <p className="text-sm text-gray-600 mb-6">
                 Where you are gaining confidence vs. losing momentum.
               </p>
-              {demoMode ? (
+              {momentumItems.length > 0 ? (
                 <div className="mt-5 space-y-4">
-                  {[
-                    { label: 'Pricing pages', value: 82 },
-                    { label: 'Onboarding flow', value: 68 },
-                    { label: 'Docs & support', value: 44 },
-                    { label: 'Partner ecosystem', value: 77 },
-                  ].map((item) => (
-                    <div key={item.label} className="space-y-2">
-                      <div className="flex items-center justify-between">
-                        <span className="text-sm font-medium text-gray-700">{item.label}</span>
-                        <span className="text-sm font-bold text-gray-900">{item.value}%</span>
+                  {momentumItems.map((item) => {
+                    const value = Math.round((item.count / momentumMax) * 100);
+                    return (
+                      <div key={item.label} className="space-y-2">
+                        <div className="flex items-center justify-between">
+                          <span className="text-sm font-medium text-gray-700">{item.label}</span>
+                          <span className="text-sm font-bold text-gray-900">{value}%</span>
+                        </div>
+                        <div className="h-3 rounded-full bg-gray-100 overflow-hidden">
+                          <div
+                            className="h-full rounded-full bg-gradient-to-r from-blue-500 to-indigo-600 transition-all duration-500"
+                            style={{ width: `${value}%` }}
+                          />
+                        </div>
                       </div>
-                      <div className="h-3 rounded-full bg-gray-100 overflow-hidden">
-                        <div
-                          className="h-full rounded-full bg-gradient-to-r from-blue-500 to-indigo-600 transition-all duration-500"
-                          style={{ width: `${item.value}%` }}
-                        />
-                      </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               ) : (
                 <NoDataState helper="Momentum appears once telemetry, audits, and coverage signals connect." />
@@ -887,7 +1073,14 @@ function DashboardContent() {
                   index === dashboardCards.length - 1 ? '' : ''
                 }`}
               >
-                <div className="px-5 py-4 text-gray-900 font-semibold">{card.name}</div>
+                <div className="px-5 py-4 text-gray-900 font-semibold flex items-center gap-2">
+                  {card.name}
+                  {card.id === 'authority' && <ScoringMethodology scoreType="authority" />}
+                  {card.id === 'confusion' && <ScoringMethodology scoreType="confusion" />}
+                  {card.id === 'schema' && <ScoringMethodology scoreType="schema" />}
+                  {card.id === 'coverage' && <ScoringMethodology scoreType="coverage" />}
+                  {card.id === 'telemetry' && <ScoringMethodology scoreType="telemetry" />}
+                </div>
                 <div className="px-5 py-4">
                   <span
                     className={`text-xs font-semibold px-2.5 py-1 rounded-full shadow-sm ${
@@ -965,18 +1158,23 @@ function PulseCard({
   value,
   helper,
   trend,
+  scoringType,
 }: {
   title: string;
   value?: string;
   helper?: string;
   trend?: string;
+  scoringType?: 'authority' | 'confusion' | 'schema' | 'coverage' | 'telemetry';
 }) {
   const isPositive = trend?.includes('+') || trend?.toLowerCase().includes('stable');
   const trendColor = isPositive ? 'text-emerald-600' : trend?.toLowerCase().includes('needs') ? 'text-amber-600' : 'text-gray-600';
   
   return (
     <div className="rounded-xl border border-gray-200 bg-gradient-to-br from-white to-gray-50 p-5 hover:shadow-md transition-all">
-      <p className="text-xs uppercase tracking-wide text-gray-600 font-semibold mb-3">{title}</p>
+      <div className="flex items-center justify-between mb-3">
+        <p className="text-xs uppercase tracking-wide text-gray-600 font-semibold">{title}</p>
+        {scoringType && <ScoringMethodology scoreType={scoringType} />}
+      </div>
       {value ? (
         <div>
           <p className="text-3xl font-bold text-gray-900 mb-2">{value}</p>

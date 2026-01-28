@@ -34,9 +34,82 @@ export const telemetryEvents = pgTable('telemetry_events', {
   tenant: varchar('tenant', { length: 255 }).notNull(),
   timestamp: timestamp('timestamp').defaultNow().notNull(),
   source: varchar('source', { length: 50 }).notNull(),
+  eventType: varchar('event_type', { length: 50 }).notNull().default('custom'),
+  sessionId: uuid('session_id'),
+  page: jsonb('page'),
+  search: jsonb('search'),
   context: jsonb('context'),
   metrics: jsonb('metrics').notNull(),
   edges: jsonb('edges'),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+});
+
+// Content inventory table (crawler-based coverage)
+export const contentInventory = pgTable('content_inventory', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  siteId: uuid('site_id').references(() => sites.id).notNull(),
+  url: varchar('url', { length: 1024 }).notNull(),
+  path: varchar('path', { length: 500 }),
+  title: text('title'),
+  intent: varchar('intent', { length: 100 }),
+  funnelStage: varchar('funnel_stage', { length: 100 }),
+  hash: text('hash'),
+  metadata: jsonb('metadata'),
+  lastSeen: timestamp('last_seen').defaultNow().notNull(),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+  updatedAt: timestamp('updated_at').defaultNow().notNull(),
+});
+
+// Coverage signals table
+export const coverageSignals = pgTable('coverage_signals', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  siteId: uuid('site_id').references(() => sites.id).notNull(),
+  windowStart: timestamp('window_start').notNull(),
+  windowEnd: timestamp('window_end').notNull(),
+  missingIntents: jsonb('missing_intents'),
+  missingStages: jsonb('missing_stages'),
+  gaps: jsonb('gaps'),
+  confidence: integer('confidence').notNull().default(0),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+});
+
+// Confusion signals table
+export const confusionSignals = pgTable('confusion_signals', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  siteId: uuid('site_id').references(() => sites.id).notNull(),
+  windowStart: timestamp('window_start').notNull(),
+  windowEnd: timestamp('window_end').notNull(),
+  type: varchar('type', { length: 50 }).notNull(),
+  score: integer('score').notNull().default(0),
+  evidence: jsonb('evidence'),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+});
+
+// Authority signals table
+export const authoritySignals = pgTable('authority_signals', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  siteId: uuid('site_id').references(() => sites.id).notNull(),
+  windowStart: timestamp('window_start').notNull(),
+  windowEnd: timestamp('window_end').notNull(),
+  authorityScore: integer('authority_score').notNull().default(0),
+  trustSignals: jsonb('trust_signals'),
+  blockers: jsonb('blockers'),
+  confidence: integer('confidence').notNull().default(0),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+});
+
+// Daily rollups for dashboard telemetry
+export const dashboardRollupsDaily = pgTable('dashboard_rollups_daily', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  siteId: uuid('site_id').references(() => sites.id).notNull(),
+  day: timestamp('day').notNull(),
+  visits: integer('visits').notNull().default(0),
+  pageViews: integer('page_views').notNull().default(0),
+  searches: integer('searches').notNull().default(0),
+  interactions: integer('interactions').notNull().default(0),
+  topPages: jsonb('top_pages'),
+  topIntents: jsonb('top_intents'),
+  metrics: jsonb('metrics'),
   createdAt: timestamp('created_at').defaultNow().notNull(),
 });
 
@@ -177,6 +250,11 @@ export const pantheraCanonPlans = pgTable('panthera_canon_plans', {
 // Relations
 export const sitesRelations = relations(sites, ({ many }) => ({
   telemetryEvents: many(telemetryEvents),
+  contentInventory: many(contentInventory),
+  coverageSignals: many(coverageSignals),
+  confusionSignals: many(confusionSignals),
+  authoritySignals: many(authoritySignals),
+  dashboardRollupsDaily: many(dashboardRollupsDaily),
   configVersions: many(configVersions),
   updateHistory: many(updateHistory),
   subscriptions: many(subscriptions),
@@ -231,6 +309,41 @@ export const auditsRelations = relations(audits, ({ one, many }) => ({
     references: [sites.id],
   }),
   reports: many(reports),
+}));
+
+export const contentInventoryRelations = relations(contentInventory, ({ one }) => ({
+  site: one(sites, {
+    fields: [contentInventory.siteId],
+    references: [sites.id],
+  }),
+}));
+
+export const coverageSignalsRelations = relations(coverageSignals, ({ one }) => ({
+  site: one(sites, {
+    fields: [coverageSignals.siteId],
+    references: [sites.id],
+  }),
+}));
+
+export const confusionSignalsRelations = relations(confusionSignals, ({ one }) => ({
+  site: one(sites, {
+    fields: [confusionSignals.siteId],
+    references: [sites.id],
+  }),
+}));
+
+export const authoritySignalsRelations = relations(authoritySignals, ({ one }) => ({
+  site: one(sites, {
+    fields: [authoritySignals.siteId],
+    references: [sites.id],
+  }),
+}));
+
+export const dashboardRollupsDailyRelations = relations(dashboardRollupsDaily, ({ one }) => ({
+  site: one(sites, {
+    fields: [dashboardRollupsDaily.siteId],
+    references: [sites.id],
+  }),
 }));
 
 export const competitorsRelations = relations(competitors, ({ one }) => ({

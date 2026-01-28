@@ -79,7 +79,7 @@ export async function processApproval(
 
       if (update) {
         // Deactivate current active version
-        const deactivateResult = await db
+        await db
           .update(configVersions)
           .set({ isActive: false })
           .where(and(
@@ -92,7 +92,7 @@ export async function processApproval(
         // #endregion
 
         // Activate new version
-        const activateResult = await db
+        await db
           .update(configVersions)
           .set({ isActive: true })
           .where(and(

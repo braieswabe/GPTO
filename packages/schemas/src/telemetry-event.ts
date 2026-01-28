@@ -1,4 +1,3 @@
-import { JSONSchemaType } from 'ajv';
 
 /**
  * Telemetry Event Schema
@@ -9,6 +8,18 @@ export interface TelemetryEvent {
   tenant: string;
   timestamp: string;
   source: 'blackbox' | 'dashboard' | 'api' | 'servo';
+  event_type: 'page_view' | 'interaction' | 'search' | 'custom';
+  session_id?: string;
+  page?: {
+    url?: string;
+    path?: string;
+    title?: string;
+  };
+  search?: {
+    query?: string;
+    results_count?: number;
+    selected_result?: string;
+  };
   context?: {
     intent?: string;
     geo?: string;
@@ -39,23 +50,46 @@ export interface TelemetryEvent {
   }>;
 }
 
-export const telemetryEventSchema: JSONSchemaType<TelemetryEvent> = {
+export const telemetryEventSchema = {
   type: 'object',
-  required: ['schema', 'tenant', 'timestamp', 'source', 'metrics'],
+  required: ['schema', 'tenant', 'timestamp', 'source', 'event_type', 'metrics'],
   properties: {
     schema: { type: 'string' },
     tenant: { type: 'string' },
     timestamp: { type: 'string', format: 'date-time' },
     source: { type: 'string', enum: ['blackbox', 'dashboard', 'api', 'servo'] },
+    event_type: {
+      type: 'string',
+      enum: ['page_view', 'interaction', 'search', 'custom'],
+    },
+    session_id: { type: 'string', nullable: true },
+    page: {
+      type: 'object',
+      nullable: true,
+      additionalProperties: false,
+      properties: {
+        url: { type: 'string', nullable: true },
+        path: { type: 'string', nullable: true },
+        title: { type: 'string', nullable: true },
+      },
+      required: [],
+    },
+    search: {
+      type: 'object',
+      nullable: true,
+      additionalProperties: false,
+      properties: {
+        query: { type: 'string', nullable: true },
+        results_count: { type: 'number', nullable: true },
+        selected_result: { type: 'string', nullable: true },
+      },
+      required: [],
+    },
     context: {
       type: 'object',
       nullable: true,
+      required: [],
       additionalProperties: true,
-      properties: {
-        intent: { type: 'string', nullable: true },
-        geo: { type: 'string', nullable: true },
-        cfp_segment: { type: 'string', nullable: true },
-      },
     },
     metrics: {
       type: 'object',

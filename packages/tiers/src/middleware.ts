@@ -23,11 +23,11 @@ export async function requireFeature(
 
     // Get siteId from request (query param or body)
     const { searchParams } = new URL(request.url);
-    let siteId = searchParams.get('siteId');
+    let siteId: string | null = searchParams.get('siteId');
 
     if (!siteId) {
-      const body = await request.json().catch(() => ({}));
-      siteId = body.siteId;
+      const body = (await request.json().catch(() => ({}))) as { siteId?: string };
+      siteId = body.siteId || null;
     }
 
     if (!siteId) {
@@ -84,11 +84,11 @@ export async function requireCompetitorSlot(
 
     // Get siteId from request
     const { searchParams } = new URL(request.url);
-    let siteId = searchParams.get('siteId');
+    let siteId: string | null = searchParams.get('siteId');
 
     if (!siteId) {
-      const body = await request.json().catch(() => ({}));
-      siteId = body.siteId;
+      const body = (await request.json().catch(() => ({}))) as { siteId?: string };
+      siteId = body.siteId || null;
     }
 
     if (!siteId) {
@@ -142,11 +142,11 @@ export async function requireSchemaAccess(
 
     // Get siteId from request
     const { searchParams } = new URL(request.url);
-    let siteId = searchParams.get('siteId');
+    let siteId: string | null = searchParams.get('siteId');
 
     if (!siteId) {
-      const body = await request.json().catch(() => ({}));
-      siteId = body.siteId;
+      const body = (await request.json().catch(() => ({}))) as { siteId?: string };
+      siteId = body.siteId || null;
     }
 
     if (!siteId) {

@@ -28,5 +28,11 @@
         }
       ]
     }
+  ],
+  "crons": [
+    {
+      "path": "/api/cron/refresh-rollups",
+      "schedule": "0 2 * * *"
+    }
   ]
 }

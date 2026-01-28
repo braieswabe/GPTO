@@ -27,7 +27,7 @@ export async function generateEmailSequence(
   
   for (let i = 0; i < numEmails; i++) {
     const result = await generateAGCCContent({
-      contentType: 'email',
+      contentType: 'blog',
       topic: `${topic} - Email ${i + 1}`,
       tone: 'professional',
     });

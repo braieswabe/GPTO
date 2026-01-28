@@ -167,7 +167,7 @@ export function initializeAutoFill(config: SiteConfig): void {
   autofillConfig.forms.forEach((form) => {
     const formElement = document.querySelector(form.selector);
     if (formElement) {
-      formElement.addEventListener('focusin', (e) => {
+        formElement.addEventListener('focusin', (e: Event) => {
         const target = e.target as HTMLElement;
         if (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.tagName === 'SELECT') {
           // Trigger AutoFill on first field focus

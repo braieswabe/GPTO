@@ -25,10 +25,11 @@
       "@gpto/schemas": ["./packages/schemas/src"],
       "@gpto/shared": ["./packages/shared/src"],
       "@gpto/api": ["./packages/api/src"],
+      "@gpto/database": ["./packages/database/src"],
       "@gpto/telemetry": ["./packages/telemetry/src"],
       "@gpto/governance": ["./packages/governance/src"]
     }
   },
   "include": ["**/*.ts", "**/*.tsx"],
-  "exclude": ["node_modules", "dist", "build", ".next"]
+  "exclude": ["node_modules", "dist", "build", ".next", "scripts/**/*"]
 }
