@@ -7,3 +7,4 @@ export * from './telemetry-event';
 export * from './update-patch';
 export * from './governance-rule';
 export * from './validator';
+export * from './config-fixer';

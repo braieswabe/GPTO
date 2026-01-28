@@ -4,6 +4,7 @@ import { AuthenticationError } from '@gpto/api/src/errors';
 import { validator } from '@gpto/schemas';
 import { siteConfigSchema } from '@gpto/schemas/src/site-config';
 import { migrateConfig } from '@gpto/api';
+import { fixConfig, SAMPLE_CONFIGS } from '@gpto/schemas';
 
 /**
  * POST /api/config/revise
@@ -40,7 +41,27 @@ export async function POST(request: NextRequest) {
     // In production, this would call OpenAI/Anthropic API
     // For now, we'll use a smart rule-based approach that understands common patterns
     
-    const revisedConfig = await reviseConfigWithLLM(migratedConfig, instruction);
+    let revisedConfig = await reviseConfigWithLLM(migratedConfig, instruction);
+
+    // Auto-fix the revised config to ensure it's valid
+    // Select appropriate reference config based on verticals
+    const configObj = revisedConfig as any;
+    const verticals = configObj?.panthera_blackbox?.site?.verticals || [];
+    
+    let referenceConfig;
+    if (verticals.some((v: string) => ['healthcare', 'medical', 'health'].includes(v.toLowerCase()))) {
+      referenceConfig = SAMPLE_CONFIGS.healthcare;
+    } else if (verticals.some((v: string) => ['ecommerce', 'retail', 'shopping'].includes(v.toLowerCase()))) {
+      referenceConfig = SAMPLE_CONFIGS.ecommerce;
+    } else if (verticals.some((v: string) => ['education', 'university', 'school'].includes(v.toLowerCase()))) {
+      referenceConfig = SAMPLE_CONFIGS.education;
+    } else {
+      referenceConfig = SAMPLE_CONFIGS.minimal;
+    }
+
+    // Fix the configuration to ensure schema compliance
+    const fixResult = fixConfig(revisedConfig, referenceConfig);
+    revisedConfig = fixResult.fixedConfig;
 
     // Validate the revised config
     const isValid = validator.validate(siteConfigSchema, revisedConfig);
@@ -86,8 +107,14 @@ export async function POST(request: NextRequest) {
       changes.push(`Added ${revised.panthera_blackbox.ads.slots.length - (original?.panthera_blackbox?.ads?.slots?.length || 0)} ad slot(s)`);
     }
     
-    const explanation = changes.length > 0
-      ? `Configuration updated: ${changes.join(', ')}`
+    // Include fixes in explanation if any were made
+    const allChanges = [...changes];
+    if (fixResult.fixes.length > 0) {
+      allChanges.push(`Auto-fixed ${fixResult.fixes.length} issue(s)`);
+    }
+    
+    const explanation = allChanges.length > 0
+      ? `Configuration updated: ${allChanges.join(', ')}`
       : `Configuration processed based on: "${instruction}"`;
     
     // Log for debugging
@@ -95,7 +122,8 @@ export async function POST(request: NextRequest) {
       instruction,
       changesMade: changes.length > 0,
       changes,
-      revisedConfigKeys: Object.keys(revised || {}),
+      fixes: fixResult.fixes,
+      revisedConfigKeys: Object.keys(revisedConfig || {}),
     });
 
     return NextResponse.json({

@@ -124,13 +124,15 @@ class PantheraBlackBox {
   private config: BlackBoxConfig | null = null;
   private configUrl: string;
   private telemetryUrl: string;
-  private siteId: string;
+  private _siteId: string;
   private initialized = false;
 
   constructor(options: { configUrl: string; telemetryUrl: string; siteId: string }) {
     this.configUrl = options.configUrl;
     this.telemetryUrl = options.telemetryUrl;
-    this.siteId = options.siteId;
+    this._siteId = options.siteId;
+    // siteId stored for potential future use (e.g., telemetry context)
+    void this._siteId;
   }
 
   /**
@@ -138,10 +140,6 @@ class PantheraBlackBox {
    */
   async init(): Promise<void> {
     if (this.initialized) return;
-
-    // #region agent log
-    fetch('http://127.0.0.1:7251/ingest/f2bef142-91a5-4d7a-be78-4c2383eb5638',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'black-box/runtime.ts:53',message:'Black Box init started',data:{configUrl:this.configUrl,siteId:this.siteId},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'D'})}).catch(()=>{});
-    // #endregion
 
     try {
       const response = await fetch(this.configUrl, {
@@ -152,19 +150,11 @@ class PantheraBlackBox {
         cache: 'no-cache',
       });
 
-      // #region agent log
-      fetch('http://127.0.0.1:7251/ingest/f2bef142-91a5-4d7a-be78-4c2383eb5638',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'black-box/runtime.ts:64',message:'Config fetch response received',data:{ok:response.ok,status:response.status,statusText:response.statusText},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'D'})}).catch(()=>{});
-      // #endregion
-
       if (!response.ok) {
         throw new Error(`Failed to load config: ${response.status}`);
       }
 
       const data = await response.json();
-      
-      // #region agent log
-      fetch('http://127.0.0.1:7251/ingest/f2bef142-91a5-4d7a-be78-4c2383eb5638',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'black-box/runtime.ts:72',message:'Config JSON parsed',data:{hasPantheraBlackbox:!!data.panthera_blackbox,hasSite:!!data.panthera_blackbox?.site,brand:data.panthera_blackbox?.site?.brand,telemetryEmit:data.panthera_blackbox?.telemetry?.emit},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'D'})}).catch(()=>{});
-      // #endregion
       
       // Basic validation - ensure it has the expected structure
       if (!data.panthera_blackbox || !data.panthera_blackbox.site) {
@@ -177,24 +167,12 @@ class PantheraBlackBox {
       // Apply configuration if needed
       this.applyConfig();
 
-      // #region agent log
-      fetch('http://127.0.0.1:7251/ingest/f2bef142-91a5-4d7a-be78-4c2383eb5638',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'black-box/runtime.ts:85',message:'Config applied',data:{initialized:this.initialized,telemetryEmit:this.config.panthera_blackbox.telemetry?.emit},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'D'})}).catch(()=>{});
-      // #endregion
-
       // Start telemetry if enabled
       if (this.config.panthera_blackbox.telemetry?.emit) {
         this.startTelemetry();
-        
-        // #region agent log
-        fetch('http://127.0.0.1:7251/ingest/f2bef142-91a5-4d7a-be78-4c2383eb5638',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'black-box/runtime.ts:90',message:'Telemetry started',data:{telemetryUrl:this.telemetryUrl},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'D'})}).catch(()=>{});
-        // #endregion
       }
     } catch (error) {
       console.error('[Panthera Black Box] Initialization failed:', error);
-      
-      // #region agent log
-      fetch('http://127.0.0.1:7251/ingest/f2bef142-91a5-4d7a-be78-4c2383eb5638',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'black-box/runtime.ts:95',message:'Black Box init failed',data:{error:error instanceof Error?error.message:String(error)},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'D'})}).catch(()=>{});
-      // #endregion
       
       // Fail silently in production, but log for debugging
     }
@@ -207,10 +185,6 @@ class PantheraBlackBox {
     if (!this.config) return;
 
     const config = this.config.panthera_blackbox;
-    
-    // #region agent log
-    fetch('http://127.0.0.1:7251/ingest/f2bef142-91a5-4d7a-be78-4c2383eb5638',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'black-box/runtime.ts:95',message:'applyConfig called',data:{hasConfig:!!this.config,brand:config.site?.brand,telemetryEmit:config.telemetry?.emit,autofillEnabled:config.autofill?.enabled,hasAds:!!config.ads?.slots},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'E'})}).catch(()=>{});
-    // #endregion
     
     // Inject JSON-LD schema if configured
     this.injectSchema(config);
@@ -236,10 +210,6 @@ class PantheraBlackBox {
     if (config.ads?.slots) {
       this.initializeAdSlots(config);
     }
-    
-    // #region agent log
-    fetch('http://127.0.0.1:7251/ingest/f2bef142-91a5-4d7a-be78-4c2383eb5638',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'black-box/runtime.ts:112',message:'applyConfig completed',data:{schemaInjected:!!document.querySelector('script[data-panthera]')},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'E'})}).catch(()=>{});
-    // #endregion
   }
 
   /**
@@ -612,10 +582,6 @@ class PantheraBlackBox {
     if (typeof window === 'undefined' || !config.ads?.slots) return;
     
     config.ads.slots.forEach((slot: AdSlot) => {
-      // #region agent log
-      fetch('http://127.0.0.1:7251/ingest/f2bef142-91a5-4d7a-be78-4c2383eb5638',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'runtime.ts:226',message:'initializeAdSlots - original slot.id',data:{slotId:slot.id,slotIdType:typeof slot.id,slotIdString:String(slot.id),slotIdJSON:JSON.stringify(slot.id)},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A'})}).catch(()=>{});
-      // #endregion
-      
       // Sanitize slot ID - aggressively remove quotes and ensure it's a valid CSS selector
       let sanitizedId = String(slot.id || '').trim();
       // Remove all quotes (single and double) from anywhere in the string
@@ -623,14 +589,7 @@ class PantheraBlackBox {
       // Remove any remaining whitespace
       sanitizedId = sanitizedId.trim();
       
-      // #region agent log
-      fetch('http://127.0.0.1:7251/ingest/f2bef142-91a5-4d7a-be78-4c2383eb5638',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'runtime.ts:232',message:'initializeAdSlots - after sanitization',data:{sanitizedId,originalSlotId:slot.id,sanitizedLength:sanitizedId.length},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A'})}).catch(()=>{});
-      // #endregion
-      
       if (!sanitizedId) {
-        // #region agent log
-        fetch('http://127.0.0.1:7251/ingest/f2bef142-91a5-4d7a-be78-4c2383eb5638',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'runtime.ts:236',message:'initializeAdSlots - empty after sanitization',data:{originalSlotId:slot.id},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A'})}).catch(()=>{});
-        // #endregion
         return;
       }
       
@@ -640,18 +599,10 @@ class PantheraBlackBox {
         const escapedId = sanitizedId.replace(/[!"#$%&'()*+,.\/:;<=>?@[\\\]^`{|}~]/g, '\\$&');
         // Double-check: ensure no quotes made it through
         if (escapedId.includes('"') || escapedId.includes("'")) {
-          // #region agent log
-          fetch('http://127.0.0.1:7251/ingest/f2bef142-91a5-4d7a-be78-4c2383eb5638',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'runtime.ts:243',message:'initializeAdSlots - quotes detected in escapedId',data:{escapedId,sanitizedId,originalSlotId:slot.id},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'B'})}).catch(()=>{});
-          // #endregion
           throw new Error(`Slot ID contains quotes after sanitization: ${escapedId}`);
         }
         
         const selector = `[data-ad-slot="${escapedId}"]`;
-        
-        // #region agent log
-        fetch('http://127.0.0.1:7251/ingest/f2bef142-91a5-4d7a-be78-4c2383eb5638',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'runtime.ts:250',message:'initializeAdSlots - selector construction',data:{escapedId,selector,selectorLength:selector.length,selectorChars:Array.from(selector)},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'B'})}).catch(()=>{});
-        // #endregion
-        
         const slotElement = document.querySelector(selector);
         
         if (slotElement) {
@@ -660,16 +611,8 @@ class PantheraBlackBox {
           
           // In production, this would load ad creative and track impressions
           this.loadAdCreative(slot);
-        } else {
-          // #region agent log
-          fetch('http://127.0.0.1:7251/ingest/f2bef142-91a5-4d7a-be78-4c2383eb5638',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'runtime.ts:262',message:'initializeAdSlots - element not found',data:{selector,escapedId},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'D'})}).catch(()=>{});
-          // #endregion
         }
       } catch (error) {
-        // #region agent log
-        fetch('http://127.0.0.1:7251/ingest/f2bef142-91a5-4d7a-be78-4c2383eb5638',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'runtime.ts:267',message:'initializeAdSlots - error caught',data:{error:String(error),errorMessage:(error as Error).message,slotId:slot.id,sanitizedId,escapedId:sanitizedId.replace(/[!"#$%&'()*+,.\/:;<=>?@[\\\]^`{|}~]/g, '\\$&'),selector:`[data-ad-slot="${sanitizedId.replace(/[!"#$%&'()*+,.\/:;<=>?@[\\\]^`{|}~]/g, '\\$&')}"]`},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'C'})}).catch(()=>{});
-        // #endregion
-        
         console.error(`[Panthera Black Box] Invalid ad slot selector for ID: ${slot.id}`, error);
       }
     });

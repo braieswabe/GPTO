@@ -9,6 +9,22 @@ interface ConfigEditorProps {
   externalConfig?: unknown; // For updates from Panthera
 }
 
+async function fixConfig(config: unknown): Promise<{ fixedConfig: unknown; errors: string[]; fixes: string[] }> {
+  const response = await fetch('/api/config/fix', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${localStorage.getItem('token') || ''}`,
+    },
+    body: JSON.stringify({ config }),
+  });
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(error.error || 'Failed to fix configuration');
+  }
+  return response.json();
+}
+
 // Comprehensive example config with all available features
 const EXAMPLE_CONFIG = {
   panthera_blackbox: {
@@ -155,6 +171,8 @@ export function ConfigEditor({ initialConfig, onSubmit, onCancel, externalConfig
   const [config, setConfig] = useState(() => JSON.stringify(defaultConfig, null, 2));
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isFixing, setIsFixing] = useState(false);
+  const [fixMessage, setFixMessage] = useState<string | null>(null);
 
   // Update config when externalConfig changes (from Panthera)
   useEffect(() => {
@@ -183,6 +201,32 @@ export function ConfigEditor({ initialConfig, onSubmit, onCancel, externalConfig
     }
   };
 
+  const handleAutoFix = async () => {
+    try {
+      setError(null);
+      setFixMessage(null);
+      setIsFixing(true);
+      
+      const parsed = JSON.parse(config);
+      const result = await fixConfig(parsed);
+      
+      if (result.errors.length > 0) {
+        setError(`Some errors remain: ${result.errors.join(', ')}`);
+      }
+      
+      if (result.fixes.length > 0) {
+        setFixMessage(`Fixed ${result.fixes.length} issue(s): ${result.fixes.slice(0, 3).join(', ')}${result.fixes.length > 3 ? '...' : ''}`);
+        setConfig(JSON.stringify(result.fixedConfig, null, 2));
+      } else {
+        setFixMessage('Configuration is already valid!');
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to fix configuration');
+    } finally {
+      setIsFixing(false);
+    }
+  };
+
   return (
     <div className="space-y-4">
       <div>
@@ -194,6 +238,7 @@ export function ConfigEditor({ initialConfig, onSubmit, onCancel, externalConfig
           onChange={(e) => {
             setConfig(e.target.value);
             setError(null);
+            setFixMessage(null);
           }}
           className="w-full h-96 font-mono text-sm p-4 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-none text-gray-900 placeholder-gray-500 bg-white"
           placeholder={JSON.stringify(EXAMPLE_CONFIG, null, 2)}
@@ -203,14 +248,37 @@ export function ConfigEditor({ initialConfig, onSubmit, onCancel, externalConfig
             <p className="text-red-600 text-sm">{error}</p>
           </div>
         )}
+        {fixMessage && (
+          <div className="mt-2 p-3 bg-green-50 border border-green-200 rounded-lg">
+            <p className="text-green-700 text-sm">{fixMessage}</p>
+          </div>
+        )}
         <p className="mt-2 text-xs text-gray-500">
           Edit the JSON configuration. Changes will be validated before submission.
         </p>
       </div>
       <div className="flex gap-3 pt-4 border-t border-gray-200">
         <button
+          onClick={handleAutoFix}
+          disabled={isFixing || isSubmitting}
+          className="px-4 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed font-medium transition-colors shadow-sm"
+          title="Automatically fix configuration format and remove invalid fields"
+        >
+          {isFixing ? (
+            <span className="flex items-center">
+              <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" fill="none" viewBox="0 0 24 24">
+                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+              </svg>
+              Fixing...
+            </span>
+          ) : (
+            'Auto Fix'
+          )}
+        </button>
+        <button
           onClick={handleSubmit}
-          disabled={isSubmitting}
+          disabled={isSubmitting || isFixing}
           className="flex-1 px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed font-medium transition-colors shadow-sm"
         >
           {isSubmitting ? (
