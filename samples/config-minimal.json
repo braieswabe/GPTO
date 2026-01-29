@@ -14,9 +14,16 @@
     "telemetry": {
       "emit": true,
       "keys": [
+        "ts.authority",
         "ai.schemaCompleteness",
+        "ai.structuredDataQuality",
+        "ai.authoritySignals",
         "ai.searchVisibility"
-      ]
+      ],
+      "periodic": {
+        "enabled": true,
+        "intervalMs": 300000
+      }
     },
     "authority_grove": {
       "node": {

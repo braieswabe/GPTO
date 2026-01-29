@@ -55,6 +55,38 @@ The Mapua University Queueing System configuration (located in parent directory 
 
 ## Common Patterns
 
+### Periodic Telemetry (v1.2.0+)
+Enable automatic metrics collection for real-time dashboard updates:
+
+```json
+"telemetry": {
+  "emit": true,
+  "keys": [
+    "ts.authority",
+    "ai.schemaCompleteness",
+    "ai.structuredDataQuality",
+    "ai.authoritySignals",
+    "ai.searchVisibility"
+  ],
+  "periodic": {
+    "enabled": true,
+    "intervalMs": 300000
+  }
+}
+```
+
+**Configuration Options:**
+- `enabled` (boolean): Enable/disable periodic telemetry (default: false)
+- `intervalMs` (number): Interval in milliseconds (default: 300000 = 5 minutes)
+
+**What Gets Sent:**
+- Page views, interactions, searches (aggregated counts)
+- Schema completeness and quality scores
+- Authority and trust signals
+- Confusion patterns (repeated searches, dead ends, drop-offs)
+- Content gaps and funnel stage detection
+- Intent detection and coverage analysis
+
 ### Autofill Forms
 Each form configuration requires:
 - `selector`: CSS selector for the form element (e.g., `"form#checkout-form"`)
@@ -131,6 +163,10 @@ Every configuration must include:
 - `panthera_blackbox.telemetry.keys` (array)
 - `panthera_blackbox.policy.privacy_mode` ("anon" | "full" | "minimal")
 - `panthera_blackbox.policy.log_level` ("basic" | "detailed" | "verbose")
+
+**Optional but Recommended (v1.2.0+):**
+- `panthera_blackbox.telemetry.periodic.enabled` (boolean) - Enable periodic telemetry
+- `panthera_blackbox.telemetry.periodic.intervalMs` (number) - Interval in milliseconds (default: 300000)
 
 ## Best Practices
 

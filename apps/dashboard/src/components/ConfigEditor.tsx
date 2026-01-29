@@ -28,7 +28,7 @@ async function fixConfig(config: unknown): Promise<{ fixedConfig: unknown; error
 // Comprehensive example config with all available features
 const EXAMPLE_CONFIG = {
   panthera_blackbox: {
-    version: '1.0.0',
+    version: '1.2.0',
     site: {
       domain: 'example.com',
       brand: 'Example Brand',
@@ -37,7 +37,17 @@ const EXAMPLE_CONFIG = {
     },
     telemetry: {
       emit: true,
-      keys: ['ts.intent', 'ts.authority', 'ts.rank', 'ai.schemaCompleteness', 'ai.searchVisibility'],
+      keys: [
+        'ts.authority',
+        'ai.schemaCompleteness',
+        'ai.structuredDataQuality',
+        'ai.authoritySignals',
+        'ai.searchVisibility',
+      ],
+      periodic: {
+        enabled: true,
+        intervalMs: 300000,
+      },
     },
     tier: 'bronze',
     authority_grove: {

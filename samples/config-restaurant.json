@@ -23,9 +23,16 @@
         "reservation.booking_rate",
         "menu.view_count",
         "review.rating",
+        "ts.authority",
         "ai.schemaCompleteness",
+        "ai.structuredDataQuality",
+        "ai.authoritySignals",
         "ai.searchVisibility"
-      ]
+      ],
+      "periodic": {
+        "enabled": true,
+        "intervalMs": 300000
+      }
     },
     "autofill": {
       "enabled": true,

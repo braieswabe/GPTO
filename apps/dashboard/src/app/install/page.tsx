@@ -246,6 +246,40 @@ await blackBox.init();`}
                   </p>
                 </div>
               </div>
+
+              <div className="bg-gray-50 border border-gray-200 rounded-lg p-6">
+                <h3 className="text-lg font-semibold text-gray-900 mb-4">Step 3: Enable Periodic Telemetry (Optional but Recommended)</h3>
+                <p className="text-gray-600 mb-4">
+                  Enable periodic telemetry in your site configuration to get real-time dashboard updates:
+                </p>
+                <div className="bg-gray-900 rounded-lg p-4 overflow-x-auto mb-4">
+                  <pre className="text-green-400 text-sm">
+{`{
+  "panthera_blackbox": {
+    "telemetry": {
+      "emit": true,
+      "keys": [
+        "ts.authority",
+        "ai.schemaCompleteness",
+        "ai.structuredDataQuality",
+        "ai.authoritySignals",
+        "ai.searchVisibility"
+      ],
+      "periodic": {
+        "enabled": true,
+        "intervalMs": 300000
+      }
+    }
+  }
+}`}
+                  </pre>
+                </div>
+                <div className="mt-4 p-4 bg-blue-50 border border-blue-200 rounded">
+                  <p className="text-sm text-blue-800">
+                    <strong>💡 What Periodic Telemetry Does:</strong> Automatically sends comprehensive metrics to your dashboard every 5 minutes, populating telemetry, confusion, authority, schema, and coverage sections with real-time data.
+                  </p>
+                </div>
+              </div>
             </div>
           )}
 
@@ -274,8 +308,109 @@ await blackBox.init();`}
                   </p>
                 </div>
               </div>
+
+              <div className="bg-gray-50 border border-gray-200 rounded-lg p-6">
+                <h3 className="text-lg font-semibold text-gray-900 mb-4">Step 2: Enable Periodic Telemetry (Optional but Recommended)</h3>
+                <p className="text-gray-600 mb-4">
+                  Enable periodic telemetry in your site configuration to get real-time dashboard updates:
+                </p>
+                <div className="bg-gray-900 rounded-lg p-4 overflow-x-auto mb-4">
+                  <pre className="text-green-400 text-sm">
+{`{
+  "panthera_blackbox": {
+    "telemetry": {
+      "emit": true,
+      "keys": [
+        "ts.authority",
+        "ai.schemaCompleteness",
+        "ai.structuredDataQuality",
+        "ai.authoritySignals",
+        "ai.searchVisibility"
+      ],
+      "periodic": {
+        "enabled": true,
+        "intervalMs": 300000
+      }
+    }
+  }
+}`}
+                  </pre>
+                </div>
+                <div className="mt-4 p-4 bg-blue-50 border border-blue-200 rounded">
+                  <p className="text-sm text-blue-800">
+                    <strong>💡 What Periodic Telemetry Does:</strong> Automatically sends comprehensive metrics to your dashboard every 5 minutes, populating telemetry, confusion, authority, schema, and coverage sections with real-time data.
+                  </p>
+                </div>
+              </div>
             </div>
           )}
+        </div>
+
+        {/* Periodic Telemetry */}
+        <div className="mb-12 bg-gradient-to-r from-green-50 to-emerald-50 border border-green-200 rounded-lg p-8">
+          <h2 className="text-2xl font-bold text-gray-900 mb-4">📊 Periodic Telemetry (v1.2.0+)</h2>
+          <p className="text-gray-700 mb-6">
+            Enable periodic telemetry to automatically send comprehensive metrics to your dashboard every 5 minutes. This ensures your dashboard is always up-to-date with real-time data for telemetry, confusion, authority, schema, and coverage metrics.
+          </p>
+          
+          <div className="bg-white rounded-lg p-6 border border-green-200 mb-6">
+            <h3 className="text-lg font-semibold text-gray-900 mb-4">Configuration</h3>
+            <p className="text-gray-600 mb-4">
+              Add this to your site configuration in the GPTO dashboard:
+            </p>
+            <div className="bg-gray-900 rounded-lg p-4 overflow-x-auto mb-4">
+              <pre className="text-green-400 text-sm">
+{`{
+  "panthera_blackbox": {
+    "telemetry": {
+      "emit": true,
+      "keys": [
+        "ts.authority",
+        "ai.schemaCompleteness",
+        "ai.structuredDataQuality",
+        "ai.authoritySignals",
+        "ai.searchVisibility"
+      ],
+      "periodic": {
+        "enabled": true,
+        "intervalMs": 300000
+      }
+    }
+  }
+}`}
+              </pre>
+            </div>
+            <div className="grid gap-4 md:grid-cols-2 mt-6">
+              <div className="bg-gray-50 rounded-lg p-4">
+                <h4 className="font-semibold text-gray-900 mb-2">What Gets Sent</h4>
+                <ul className="text-sm text-gray-600 space-y-1">
+                  <li>✅ Page views, interactions, searches</li>
+                  <li>✅ Schema completeness & quality</li>
+                  <li>✅ Authority & trust signals</li>
+                  <li>✅ Confusion patterns (dead ends, repeated searches)</li>
+                  <li>✅ Content gaps & funnel stages</li>
+                  <li>✅ Intent detection</li>
+                </ul>
+              </div>
+              <div className="bg-gray-50 rounded-lg p-4">
+                <h4 className="font-semibold text-gray-900 mb-2">Dashboard Sections</h4>
+                <ul className="text-sm text-gray-600 space-y-1">
+                  <li>📈 Telemetry Dashboard</li>
+                  <li>🔍 Confusion Dashboard</li>
+                  <li>⭐ Authority Dashboard</li>
+                  <li>📋 Schema Dashboard</li>
+                  <li>📊 Coverage Dashboard</li>
+                  <li>💼 Business Brief</li>
+                </ul>
+              </div>
+            </div>
+          </div>
+          
+          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+            <p className="text-sm text-blue-800">
+              <strong>💡 Tip:</strong> Periodic telemetry is opt-in. Once enabled, data will start appearing in your dashboard within 5 minutes. The interval is configurable (default: 5 minutes / 300,000ms).
+            </p>
+          </div>
         </div>
 
         {/* Server-Side Schema Injection */}

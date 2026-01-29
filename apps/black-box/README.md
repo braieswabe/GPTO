@@ -26,6 +26,7 @@ The runtime reads JSON configuration from your GPTO dashboard and automatically:
 - ✅ **Server-side schema injection** available for external audit tool visibility
 - ✅ Builds authority signals through `sameAs` links and keywords
 - ✅ Sends telemetry to track AI search visibility
+- ✅ **Periodic telemetry** sends comprehensive metrics every 5 minutes for real-time dashboard updates
 - ✅ Ensures content is structured for AI model comprehension
 - ✅ **Automatically updates** schemas when configuration changes
 - ✅ **Telemetry-driven improvements** optimize schemas over time
@@ -44,22 +45,32 @@ pnpm add @careerdriver/black-box
 pnpm add -D @careerdriver/black-box
 
 # Install specific version
-pnpm add @careerdriver/black-box@1.0.1
+pnpm add @careerdriver/black-box@1.2.0
 
-# Install latest version
+# Install latest version (includes periodic telemetry)
 pnpm add @careerdriver/black-box@latest
 ```
+
+**Note:** v1.2.0+ includes periodic telemetry for real-time dashboard updates. See [Periodic Telemetry Guide](./PERIODIC_TELEMETRY.md) for details.
 
 #### Using npm
 
 ```bash
-npm install @careerdriver/black-box
+# Install latest version (includes periodic telemetry)
+npm install @careerdriver/black-box@latest
+
+# Install specific version
+npm install @careerdriver/black-box@1.2.0
 ```
 
 #### Using yarn
 
 ```bash
-yarn add @careerdriver/black-box
+# Install latest version (includes periodic telemetry)
+yarn add @careerdriver/black-box@latest
+
+# Install specific version
+yarn add @careerdriver/black-box@1.2.0
 ```
 
 ### ESM Import Usage
@@ -91,6 +102,8 @@ Add the script tag to your HTML:
   async
 ></script>
 ```
+
+**Note:** The `@latest` version includes periodic telemetry (v1.2.0+). To use a specific version, replace `@latest` with `@1.2.0` or your preferred version.
 
 #### Via Local Installation
 
@@ -197,6 +210,59 @@ Ensures content is:
 - Factually accurate
 - Authoritative
 - Fair and unbiased
+
+### Periodic Telemetry (v1.2.0+)
+Automatically sends comprehensive metrics to the GPTO dashboard every 5 minutes:
+
+**Features:**
+- **Real-time Dashboard Updates**: Populates telemetry, confusion, authority, schema, and coverage metrics
+- **Comprehensive Metrics**: Collects real metrics from page state (JSON-LD schemas, authority signals, content gaps)
+- **Confusion Detection**: Tracks repeated searches, dead ends, and drop-offs
+- **Coverage Analysis**: Detects content gaps, funnel stages, and intent mismatches
+- **Configurable Interval**: Default 5 minutes, customizable via config
+
+**Enable Periodic Telemetry:**
+
+Add to your site configuration in the GPTO dashboard:
+
+```json
+{
+  "panthera_blackbox": {
+    "telemetry": {
+      "emit": true,
+      "keys": [
+        "ts.authority",
+        "ai.schemaCompleteness",
+        "ai.structuredDataQuality",
+        "ai.authoritySignals",
+        "ai.searchVisibility"
+      ],
+      "periodic": {
+        "enabled": true,
+        "intervalMs": 300000
+      }
+    }
+  }
+}
+```
+
+**What Gets Sent:**
+- Page views, interactions, and searches (aggregated counts)
+- Schema completeness and quality scores
+- Authority and trust signals
+- Confusion patterns (repeated searches, dead ends, drop-offs)
+- Content gaps and funnel stage detection
+- Intent detection and coverage analysis
+
+**Dashboard Integration:**
+All periodic telemetry data automatically populates:
+- Telemetry dashboard (views, visits, top pages)
+- Confusion dashboard (dead ends, repeated searches)
+- Authority dashboard (trust scores, confidence gaps)
+- Schema dashboard (completeness, quality)
+- Coverage dashboard (content gaps, missing stages)
+- Business Brief (executive insights)
+- Pulse Cards (revenue impact, experience health, trust lift, coverage risk)
 - Recent and relevant
 
 ## Build
@@ -216,9 +282,18 @@ Deploy to Vercel CDN for global distribution. The file should be served with app
 
 ## Version
 
-**Current Version:** `1.1.0`
+**Current Version:** `1.2.0`
 
-### What's New in v1.1.0
+### What's New in v1.2.0
+
+- ✅ **Periodic Telemetry**: Automatic comprehensive metrics collection every 5 minutes
+- ✅ **Real-time Dashboard Updates**: Populates all dashboard sections with live data
+- ✅ **Enhanced Metrics Collection**: Real metrics from page state (not random values)
+- ✅ **Confusion Detection**: Tracks repeated searches, dead ends, drop-offs
+- ✅ **Coverage Analysis**: Detects content gaps, funnel stages, intent mismatches
+- ✅ **Configurable Interval**: Customize periodic telemetry interval
+
+### Previous Features (v1.1.0)
 
 - ✅ Automatic server-side schema injection
 - ✅ Zero manual HTML edits required

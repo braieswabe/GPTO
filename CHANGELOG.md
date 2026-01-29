@@ -5,6 +5,68 @@ All notable changes to GPTO Suite will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.2.0] - 2026-01-29
+
+### Added
+
+#### 🚀 Periodic Telemetry Data Collection
+- **Automatic Metrics Collection**: Sends comprehensive metrics to GPTO dashboard every 5 minutes
+  - Real-time dashboard updates for telemetry, confusion, authority, schema, and coverage
+  - Configurable interval (default: 5 minutes / 300,000ms)
+  - Opt-in via configuration: `telemetry.periodic.enabled: true`
+
+- **Enhanced Metrics Collection**
+  - Real metrics calculated from actual page state (not random values)
+  - Schema completeness: Detects JSON-LD schemas and calculates completeness score
+  - Structured data quality: Validates schema structure and required fields
+  - Authority signals: Calculates trust signals from page content and config
+  - Search visibility: Measures meta tags, titles, H1s, content depth
+
+- **Confusion Detection**
+  - Repeated searches: Tracks queries searched multiple times in session
+  - Dead ends: Detects pages with no navigation after threshold (60s)
+  - Drop-offs: Identifies sessions with minimal activity (≤2 events)
+  - Client-side tracking with bounded memory (last 50 events)
+
+- **Coverage Analysis**
+  - Content gaps: Detects missing what/who/how/trust sections
+  - Funnel stage detection: Identifies awareness/consideration/decision/retention stages
+  - Intent detection: Categorizes pages (pricing/demo/docs/general)
+  - Page metadata: Tracks H1/H2 counts, text length, JSON-LD presence
+
+- **Dashboard Integration**
+  - All periodic data automatically populates dashboard sections
+  - Telemetry dashboard: Page views, visits, top pages, search intents
+  - Confusion dashboard: Dead ends, repeated searches, drop-offs, intent mismatches
+  - Authority dashboard: Authority scores, trust signals, confidence gaps
+  - Schema dashboard: Completeness scores, quality scores, missing/broken schemas
+  - Coverage dashboard: Content gaps, missing funnel stages, priority fixes
+  - Business Brief: Executive insights from aggregated data
+  - Pulse Cards: Revenue impact, experience health, trust lift, coverage risk
+
+#### 📊 State Management
+- Internal state tracking for metrics aggregation
+- Session persistence across periodic sends
+- Memory-safe bounded arrays (prevents memory leaks)
+- Automatic cleanup on page unload
+
+### Changed
+
+- **Black Box Runtime** (`apps/black-box/`)
+  - Version bumped to `1.2.0`
+  - Enhanced `collectMetrics()` to gather real metrics from page state
+  - Added `sendPeriodicTelemetry()` method for comprehensive data collection
+  - Modified `startTelemetry()` to support periodic telemetry timer
+  - Added cleanup handlers for interval management
+
+### Technical Details
+
+- **Event Structure**: Periodic events use `event_type: 'custom'` with `periodic: true` context flag
+- **Heartbeat Events**: Also sends `page_view` events to ensure telemetry dashboard counts correctly
+- **Fail-Safe Design**: All periodic operations wrapped in try-catch, never breaks the site
+- **Network Resilience**: Uses `navigator.sendBeacon()` with `fetch()` fallback
+- **Backward Compatible**: Existing event-driven telemetry continues unchanged
+
 ## [1.1.0] - 2026-01-28
 
 ### Added

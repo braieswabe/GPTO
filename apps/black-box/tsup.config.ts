@@ -11,6 +11,6 @@ export default defineConfig({
   outDir: 'dist',
   target: 'es2020',
   banner: {
-    js: '/* Panthera Black Box Runtime v1.0.0 - Safe, Declarative Website Control */',
+    js: '/* Panthera Black Box Runtime v1.2.0 - Safe, Declarative Website Control with Periodic Telemetry */',
   },
 });

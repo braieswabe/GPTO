@@ -24,9 +24,16 @@
         "appointment.wait_time",
         "appointment.booking_rate",
         "system.availability",
+        "ts.authority",
         "ai.schemaCompleteness",
+        "ai.structuredDataQuality",
+        "ai.authoritySignals",
         "ai.searchVisibility"
-      ]
+      ],
+      "periodic": {
+        "enabled": true,
+        "intervalMs": 300000
+      }
     },
     "autofill": {
       "enabled": true,

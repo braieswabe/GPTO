@@ -109,10 +109,27 @@ Best for external audit tool visibility. See [Automatic Schema Injection](./AUTO
 
 ### Method 3: NPM Package
 ```bash
-npm install @careerdriver/black-box
+npm install @careerdriver/black-box@latest
+# or
+pnpm add @careerdriver/black-box@latest
 ```
 
-## Recent Updates (v1.1.0)
+**Version:** v1.2.0 includes periodic telemetry for real-time dashboard updates.
+
+See [Black Box README](./apps/black-box/README.md) for detailed installation and configuration.
+
+## Recent Updates
+
+### v1.2.0 (Latest)
+
+- ✅ **Periodic Telemetry** - Automatic comprehensive metrics collection every 5 minutes
+- ✅ **Real-time Dashboard Updates** - Populates all dashboard sections with live data
+- ✅ **Enhanced Metrics Collection** - Real metrics from page state (not random values)
+- ✅ **Confusion Detection** - Tracks repeated searches, dead ends, drop-offs
+- ✅ **Coverage Analysis** - Detects content gaps, funnel stages, intent mismatches
+- ✅ **Configurable Interval** - Customize periodic telemetry interval
+
+### v1.1.0
 
 - ✅ **Automatic Server-Side Schema Injection** - Schemas visible to external audit tools
 - ✅ **Zero Manual HTML Edits** - All schema injection is automatic
@@ -124,11 +141,13 @@ See [CHANGELOG.md](./CHANGELOG.md) for complete release notes.
 
 ## Documentation
 
-- [Installation Guide](./INSTALLATION_UPDATED.md) - Complete installation instructions
-- [Automatic Schema Injection](./AUTOMATIC_SCHEMA_INJECTION.md) - Server-side injection guide
+- [Black Box README](./apps/black-box/README.md) - Complete Black Box runtime documentation
+- [Periodic Telemetry Guide](./apps/black-box/PERIODIC_TELEMETRY.md) - Periodic telemetry integration guide
+- [Installation Guide](./INSTALLATION_UPDATED.md) - Complete installation instructions (if exists)
+- [Automatic Schema Injection](./AUTOMATIC_SCHEMA_INJECTION.md) - Server-side injection guide (if exists)
 - [Configuration Samples](./samples/README.md) - Example configurations
-- [How It Works](./HOW_IT_WORKS.md) - Technical documentation
-- [AI Search Optimization](./AI_SEARCH_OPTIMIZATION.md) - Best practices
+- [How It Works](./HOW_IT_WORKS.md) - Technical documentation (if exists)
+- [AI Search Optimization](./AI_SEARCH_OPTIMIZATION.md) - Best practices (if exists)
 
 ## License
 

@@ -109,7 +109,7 @@ export async function POST(request: NextRequest) {
     // Create initial config version (must match siteConfigSchema)
     const initialConfig = {
       panthera_blackbox: {
-        version: '1.0.0',
+        version: '1.2.0',
         site: {
           domain: domain.trim(),
           brand: brand.trim(),
@@ -118,7 +118,17 @@ export async function POST(request: NextRequest) {
         },
         telemetry: {
           emit: true,
-          keys: ['ts.intent', 'ts.authority', 'ts.rank', 'ai.schemaCompleteness', 'ai.searchVisibility'],
+          keys: [
+            'ts.authority',
+            'ai.schemaCompleteness',
+            'ai.structuredDataQuality',
+            'ai.authoritySignals',
+            'ai.searchVisibility',
+          ],
+          periodic: {
+            enabled: true,
+            intervalMs: 300000,
+          },
         },
         tier: 'bronze' as const,
         authority_grove: {
@@ -181,7 +191,7 @@ export async function POST(request: NextRequest) {
 
     await db.insert(configVersions).values({
       siteId: newSite.id,
-      version: '1.0.0',
+      version: '1.2.0',
       configJson: initialConfig,
       isActive: true,
       createdBy: payload.userId,
