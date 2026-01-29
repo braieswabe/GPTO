@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { GET } from './route';
 import { NextRequest } from 'next/server';
+import { db } from '@gpto/database';
 
 // Mock dependencies
 vi.mock('@gpto/database', () => ({
@@ -22,6 +23,10 @@ vi.mock('@/lib/dashboard-helpers', () => ({
     rangeKey: '7d',
   })),
   getSiteIds: vi.fn(async () => ['site-1']),
+  extractMetrics: (events: Array<Record<string, unknown>>, key: string) =>
+    events
+      .map((event) => (event.metrics as Record<string, unknown> | undefined)?.[key])
+      .filter((value): value is number => typeof value === 'number'),
 }));
 
 describe('GET /api/dashboard/authority', () => {
@@ -39,13 +44,22 @@ describe('GET /api/dashboard/authority', () => {
       },
     ];
 
-    const mockSelect = vi.fn().mockReturnValue({
+    const mockSelect = (result: unknown) => ({
       from: vi.fn().mockReturnValue({
-        where: vi.fn().mockResolvedValue(mockEvents),
+        where: vi.fn().mockResolvedValue(result),
+      }),
+    });
+    const mockSelectWithOrderBy = (result: unknown) => ({
+      from: vi.fn().mockReturnValue({
+        where: vi.fn().mockReturnValue({
+          orderBy: vi.fn().mockResolvedValue(result),
+        }),
       }),
     });
 
-    vi.mocked(require('@gpto/database').db.select).mockReturnValue(mockSelect as any);
+    vi.mocked(db.select)
+      .mockReturnValueOnce(mockSelect(mockEvents) as any)
+      .mockReturnValueOnce(mockSelectWithOrderBy([]) as any);
 
     const request = new NextRequest('http://localhost/api/dashboard/authority?range=7d', {
       headers: {

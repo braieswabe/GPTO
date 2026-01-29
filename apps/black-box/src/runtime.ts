@@ -152,6 +152,9 @@ class PantheraBlackBox {
   private _siteId: string;
   private initialized = false;
   private periodicIntervalId: number | null = null;
+  private heartbeatIntervalId: number | null = null;
+  private memorySessionId?: string;
+  private memorySessionTs?: number;
   private periodicState: PeriodicTelemetryState = {
     pageViews: 0,
     interactions: 0,
@@ -700,8 +703,9 @@ class PantheraBlackBox {
 
     // Start periodic telemetry if enabled
     const periodicConfig = this.config.panthera_blackbox.telemetry.periodic;
-    if (periodicConfig?.enabled && typeof window !== 'undefined') {
-      const intervalMs = periodicConfig.intervalMs || 300000; // Default 5 minutes
+    const periodicEnabled = periodicConfig?.enabled ?? true;
+    if (periodicEnabled && typeof window !== 'undefined') {
+      const intervalMs = periodicConfig?.intervalMs || 300000; // Default 5 minutes
       
       // Clear any existing interval
       if (this.periodicIntervalId !== null) {
@@ -713,7 +717,24 @@ class PantheraBlackBox {
         this.sendPeriodicTelemetry();
       }, intervalMs);
 
+      // Send an initial periodic snapshot so dashboards populate immediately
+      window.setTimeout(() => {
+        this.sendPeriodicTelemetry();
+      }, 1000);
+
       // Set up cleanup on page unload
+      this.setupCleanup();
+    } else if (typeof window !== 'undefined') {
+      const intervalMs = 300000; // Default 5 minutes
+      if (this.heartbeatIntervalId !== null) {
+        window.clearInterval(this.heartbeatIntervalId);
+      }
+      this.heartbeatIntervalId = window.setInterval(() => {
+        this.sendTelemetry('page_view', {
+          heartbeat: true,
+          timestamp: new Date().toISOString(),
+        });
+      }, intervalMs);
       this.setupCleanup();
     }
   }
@@ -730,6 +751,10 @@ class PantheraBlackBox {
         window.clearInterval(this.periodicIntervalId);
         this.periodicIntervalId = null;
       }
+      if (this.heartbeatIntervalId !== null) {
+        window.clearInterval(this.heartbeatIntervalId);
+        this.heartbeatIntervalId = null;
+      }
     };
 
     // Use beforeunload for better reliability
@@ -742,7 +767,13 @@ class PantheraBlackBox {
     document.addEventListener('visibilitychange', () => {
       if (document.hidden) {
         // Send final periodic telemetry before cleanup
-        this.sendPeriodicTelemetry();
+        const periodicConfig = this.config?.panthera_blackbox.telemetry?.periodic;
+        const periodicEnabled = periodicConfig?.enabled ?? true;
+        if (periodicEnabled) {
+          this.sendPeriodicTelemetry();
+        } else {
+          this.sendTelemetry('page_view', { heartbeat: true, timestamp: new Date().toISOString() });
+        }
       }
     });
   }
@@ -796,11 +827,31 @@ class PantheraBlackBox {
             title: document.title,
           }
         : undefined);
-    const searchPayload: TelemetryEvent['search'] = eventType === 'search' && search 
-      ? (search as TelemetryEvent['search'])
+    const contextQuery =
+      (context.search_query as string | undefined) ||
+      (context.query as string | undefined);
+    const contextResults = context.results_count as number | undefined;
+    const contextSelected = context.selected_result as string | undefined;
+    const searchPayload: TelemetryEvent['search'] = eventType === 'search'
+      ? (search as TelemetryEvent['search']) ||
+        (contextQuery
+          ? {
+              query: contextQuery,
+              results_count: contextResults,
+              selected_result: contextSelected,
+            }
+          : undefined)
       : undefined;
 
-    const contextPayload = { event_type: eventType, ...context };
+    const contextPayload: Record<string, unknown> = { event_type: eventType, ...context };
+    if (isPageView) {
+      if (contextPayload.intent === undefined) {
+        contextPayload.intent = this.detectIntent();
+      }
+      if (contextPayload.funnelStage === undefined) {
+        contextPayload.funnelStage = this.detectFunnelStage();
+      }
+    }
 
     const event: TelemetryEvent = {
       schema: 'panthera.blackbox.v1',
@@ -1139,9 +1190,17 @@ class PantheraBlackBox {
   private collectMetrics(): Record<string, number> {
     const metrics: Record<string, number> = {};
     const keys = this.config?.panthera_blackbox.telemetry?.keys || [];
+    const requiredKeys = [
+      'ts.authority',
+      'ai.schemaCompleteness',
+      'ai.structuredDataQuality',
+      'ai.authoritySignals',
+      'ai.searchVisibility',
+    ];
+    const keySet = new Set([...keys, ...requiredKeys]);
 
     // Collect real metrics from page state
-    keys.forEach((key) => {
+    keySet.forEach((key) => {
       if (key.startsWith('ai.')) {
         // AI search metrics
         if (key === 'ai.schemaCompleteness') {
@@ -1368,27 +1427,58 @@ class PantheraBlackBox {
 
   private getSessionId(): string | undefined {
     if (typeof window === 'undefined') return undefined;
-    const storage = window.sessionStorage;
-    if (!storage) return undefined;
+    const sessionStorage = window.sessionStorage;
+    const localStorage = window.localStorage;
 
     const key = 'panthera_session_id';
     const tsKey = 'panthera_session_ts';
     const now = Date.now();
     const ttlMs = 30 * 60 * 1000;
 
-    const existing = storage.getItem(key);
-    const existingTs = Number(storage.getItem(tsKey) || 0);
-    if (existing && existingTs && now - existingTs < ttlMs) {
-      storage.setItem(tsKey, String(now));
-      return existing;
+    const readStorage = (storage: Storage | null) => {
+      if (!storage) return null;
+      try {
+        const existing = storage.getItem(key);
+        const existingTs = Number(storage.getItem(tsKey) || 0);
+        if (existing && existingTs && now - existingTs < ttlMs) {
+          storage.setItem(tsKey, String(now));
+          return existing;
+        }
+      } catch {
+        return null;
+      }
+      return null;
+    };
+
+    const writeStorage = (storage: Storage | null, value: string) => {
+      if (!storage) return false;
+      try {
+        storage.setItem(key, value);
+        storage.setItem(tsKey, String(now));
+        return true;
+      } catch {
+        return false;
+      }
+    };
+
+    const existingSession = readStorage(sessionStorage) || readStorage(localStorage);
+    if (existingSession) return existingSession;
+
+    if (this.memorySessionId && this.memorySessionTs && now - this.memorySessionTs < ttlMs) {
+      this.memorySessionTs = now;
+      return this.memorySessionId;
     }
 
     const newId =
       typeof crypto !== 'undefined' && 'randomUUID' in crypto
         ? crypto.randomUUID()
         : `${now}-${Math.random().toString(16).slice(2)}`;
-    storage.setItem(key, newId);
-    storage.setItem(tsKey, String(now));
+
+    if (!writeStorage(sessionStorage, newId)) {
+      writeStorage(localStorage, newId);
+    }
+    this.memorySessionId = newId;
+    this.memorySessionTs = now;
     return newId;
   }
 

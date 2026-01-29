@@ -75,6 +75,14 @@ export async function POST(request: NextRequest) {
           console.error(`Failed to refresh confusion for site ${siteId}:`, err);
         });
 
+        // Refresh coverage (triggers content crawl)
+        await fetch(
+          `${origin}/api/dashboard/coverage?siteId=${siteId}&range=7d&refresh=true`,
+          { method: 'GET', headers }
+        ).catch(err => {
+          console.error(`Failed to refresh coverage for site ${siteId}:`, err);
+        });
+
         refreshedCount++;
       } catch (error) {
         errors.push({

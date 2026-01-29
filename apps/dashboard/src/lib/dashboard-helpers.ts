@@ -68,3 +68,36 @@ export async function getSites(request: NextRequest, siteId?: string | null) {
 
   return db.select().from(sites);
 }
+
+/**
+ * Parse a metric value from JSONB to number
+ * JSONB numbers are stored as numbers, but Drizzle may return them as strings
+ * This ensures we always get a number
+ */
+export function parseMetricValue(value: unknown): number | null {
+  if (typeof value === 'number') {
+    return isNaN(value) ? null : value;
+  }
+  if (typeof value === 'string') {
+    const parsed = parseFloat(value);
+    return isNaN(parsed) ? null : parsed;
+  }
+  return null;
+}
+
+/**
+ * Extract and parse metrics from telemetry events
+ * Handles both number and string values from JSONB
+ */
+export function extractMetrics(
+  events: Array<{ metrics: unknown }>,
+  key: string
+): number[] {
+  return events
+    .map((event) => {
+      const metrics = event.metrics as Record<string, unknown> | null;
+      if (!metrics) return null;
+      return parseMetricValue(metrics[key]);
+    })
+    .filter((v): v is number => v !== null);
+}

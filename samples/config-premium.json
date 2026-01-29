@@ -1,0 +1,296 @@
+{
+  "panthera_blackbox": {
+    "version": "1.2.0",
+    "site": {
+      "domain": "cdhq.vercel.app",
+      "brand": "Career Driver HQ",
+      "verticals": [
+        "recruitment",
+        "staffing",
+        "talent-acquisition",
+        "hr-technology",
+        "ats",
+        "lead-management",
+        "automation",
+        "enterprise-hiring"
+      ],
+      "geo": ["US", "CA", "UK", "AU", "DE", "FR", "JP"]
+    },
+    "policy": {
+      "privacy_mode": "full",
+      "log_level": "detailed"
+    },
+    "telemetry": {
+      "emit": true,
+      "keys": [
+        "ts.intent",
+        "ts.anchor",
+        "ts.authority",
+        "ts.recency",
+        "ts.fairness",
+        "ts.conflict",
+        "ts.rank",
+        "ai.schemaCompleteness",
+        "ai.structuredDataQuality",
+        "ai.authoritySignals",
+        "ai.searchVisibility",
+        "user.intent",
+        "user.engagement",
+        "system.performance"
+      ],
+      "periodic": {
+        "enabled": true,
+        "intervalMs": 300000
+      }
+    },
+    "tier": "gold",
+    "authority_grove": {
+      "node": {
+        "id": "https://cdhq.vercel.app",
+        "type": "Organization",
+        "name": "Career Driver HQ",
+        "sameAs": [
+          "https://www.linkedin.com/company/career-driver-hq",
+          "https://twitter.com/careerdriverhq",
+          "https://www.facebook.com/careerdriverhq",
+          "https://github.com/careerdriver",
+          "https://www.g2.com/products/career-driver-hq",
+          "https://www.crunchbase.com/organization/career-driver-hq"
+        ],
+        "keywords": [
+          "enterprise recruitment platform",
+          "applicant tracking system",
+          "recruitment automation",
+          "lead-based hiring",
+          "talent acquisition software",
+          "staffing technology",
+          "driver recruitment",
+          "high-volume hiring"
+        ]
+      },
+      "partners": [
+        {
+          "id": "https://partner1.com",
+          "type": "TechnologyPartner",
+          "weight": 0.9
+        },
+        {
+          "id": "https://partner2.com",
+          "type": "IntegrationPartner",
+          "weight": 0.85
+        },
+        {
+          "id": "https://partner3.com",
+          "type": "ResellerPartner",
+          "weight": 0.8
+        }
+      ],
+      "trustEdges": [
+        {
+          "from": "https://cdhq.vercel.app",
+          "to": "https://partner1.com",
+          "weight": 0.95
+        },
+        {
+          "from": "https://cdhq.vercel.app",
+          "to": "https://certification-authority.com",
+          "weight": 0.9
+        }
+      ],
+      "corroboration": [
+        {
+          "source": "https://trusted-review-site.com",
+          "target": "https://cdhq.vercel.app",
+          "weight": 0.9
+        },
+        {
+          "source": "https://industry-award-site.com",
+          "target": "https://cdhq.vercel.app",
+          "weight": 0.85
+        },
+        {
+          "source": "https://analyst-report-site.com",
+          "target": "https://cdhq.vercel.app",
+          "weight": 0.88
+        }
+      ]
+    },
+    "truthseeker": {
+      "weights": {
+        "intent_match": 0.3,
+        "anchor_match": 0.2,
+        "authority": 0.25,
+        "recency": 0.15,
+        "fairness": 0.1
+      },
+      "conflict_penalty_max": 0.3,
+      "rules": {
+        "downweight_affiliate_listicles": true,
+        "branch_reviews_are_local": false,
+        "separate_staffing_vs_agency": true,
+        "min_sources_for_negative_claim": 3
+      }
+    },
+    "products": [
+      {
+        "name": "Recruitment Automation Platform",
+        "description": "End-to-end recruitment platform designed for high-volume and enterprise hiring. Automates applicant intake, screening, routing, and recruiter workflows."
+      },
+      {
+        "name": "Applicant Tracking System (ATS)",
+        "description": "Centralized ATS with candidate profiles, document management, recruiter collaboration, and compliance-ready audit trails."
+      },
+      {
+        "name": "Recruitment Analytics & Reporting",
+        "description": "Real-time dashboards for recruiter performance, lead conversion, time-to-hire, and hiring ROI."
+      }
+    ],
+    "services": [
+      {
+        "name": "Recruitment Platform Implementation",
+        "description": "Hands-on onboarding and implementation services to align the platform with your hiring workflows and compliance requirements."
+      },
+      {
+        "name": "Recruitment Process Consulting",
+        "description": "Expert consulting to optimize hiring funnels, lead quality, recruiter efficiency, and operational scalability."
+      },
+      {
+        "name": "24/7 Recruiter & Admin Support",
+        "description": "Round-the-clock support, training, and platform assistance for recruiters, managers, and administrators."
+      }
+    ],
+    "faqs": [
+      {
+        "question": "Who is this recruitment platform designed for?",
+        "answer": "Career Driver HQ is built for staffing agencies, enterprise hiring teams, and organizations managing high-volume or lead-driven recruitment."
+      },
+      {
+        "question": "Can this platform support high-volume hiring?",
+        "answer": "Yes. The platform is designed for scale and supports thousands of applicants, automated screening, recruiter load balancing, and workflow automation."
+      },
+      {
+        "question": "Is the platform compliant with data privacy laws?",
+        "answer": "We comply with GDPR, SOC 2 Type II, and industry best practices. Candidate data is encrypted in transit and at rest."
+      },
+      {
+        "question": "Does it integrate with job boards and CRMs?",
+        "answer": "Yes. We offer integrations with major job boards, CRMs, email systems, and automation tools such as Zapier."
+      },
+      {
+        "question": "How does pricing work?",
+        "answer": "Pricing is based on recruiter seats, lead volume, and feature requirements. Custom enterprise plans are available."
+      }
+    ],
+    "seo_enhancements": {
+      "meta_description": "Career Driver HQ - Premium Recruitment Platform for staffing agencies and enterprise hiring teams. Automate applicant tracking, screening, and recruiter workflows.",
+      "canonical_enabled": true,
+      "content_enhancements": {
+        "enabled": true,
+        "what": "Career Driver HQ provides enterprise-grade recruitment software that automates applicant intake, screening, and recruiter workflows for staffing agencies and hiring teams.",
+        "who": "Designed for staffing agencies, recruitment firms, and enterprise hiring teams managing high-volume or lead-driven recruitment.",
+        "how": "Start by booking a demo with our recruitment specialists. We tailor the platform to your hiring workflows, integrate your tools, and provide onboarding and training.",
+        "trust": "Trusted by recruitment teams across industries. SOC 2 compliant, GDPR-ready, and proven at scale with millions of applicants processed."
+      },
+      "content_depth": {
+        "enabled": true,
+        "min_h2_count": 8,
+        "h2_templates": [
+          "Recruitment Platform Overview",
+          "Applicant Tracking System",
+          "High-Volume Hiring Automation",
+          "Recruiter Workflow Management",
+          "Integrations & Job Boards",
+          "Security & Compliance",
+          "Recruitment Analytics",
+          "Pricing for Recruitment Teams",
+          "Customer Success Stories",
+          "Get Started with Career Driver HQ"
+        ],
+        "default_content": "Career Driver HQ helps organizations streamline hiring, improve lead conversion, and scale recruiter operations through automation and analytics."
+      },
+      "structure_enhancements": {
+        "inject_h1_if_missing": true,
+        "h1_text": "Career Driver HQ",
+        "enhance_title": true,
+        "min_title_length": 40,
+        "title_template": "{brand} – Enterprise Recruitment & Applicant Tracking Platform"
+      }
+    },
+    "autofill": {
+      "enabled": true,
+      "forms": [
+        {
+          "selector": "form#contact-form",
+          "map": {
+            "email": "input[name='email']",
+            "name": "input[name='name']",
+            "company": "input[name='company']",
+            "phone": "input[name='phone']",
+            "message": "textarea[name='message']"
+          }
+        },
+        {
+          "selector": "form#demo-request",
+          "map": {
+            "email": "#demo-email",
+            "name": "#demo-name",
+            "company": "#demo-company",
+            "role": "select[name='role']",
+            "use-case": "textarea[name='use-case']"
+          }
+        },
+        {
+          "selector": "form#newsletter-signup",
+          "map": {
+            "email": "#newsletter-email",
+            "name": "#newsletter-name"
+          }
+        },
+        {
+          "selector": "form#enterprise-contact",
+          "map": {
+            "email": "input[type='email']",
+            "name": "input[name='contact-name']",
+            "company": "input[name='company-name']",
+            "phone": "input[type='tel']",
+            "employees": "select[name='company-size']",
+            "industry": "select[name='industry']"
+          }
+        }
+      ]
+    },
+    "ads": {
+      "slots": [
+        {
+          "id": "header-banner",
+          "contexts": ["homepage", "product", "pricing"]
+        },
+        {
+          "id": "sidebar-ad",
+          "contexts": ["blog", "article", "resources"]
+        },
+        {
+          "id": "footer-ad",
+          "contexts": []
+        },
+        {
+          "id": "in-content-ad",
+          "contexts": ["blog", "article", "case-study"]
+        },
+        {
+          "id": "sticky-sidebar",
+          "contexts": ["product", "pricing", "features"]
+        }
+      ]
+    },
+    "geo_nodes": {
+      "enabled": true,
+      "cities_max": 20,
+      "attractions_max": 10,
+      "templates": {
+        "city": "Career Driver HQ supports hiring teams in {city}. Connect with local recruiters and scale your hiring.",
+        "attraction": "Organizations near {attraction} in {city} trust Career Driver HQ to manage high-volume hiring."
+      }
+    }
+  }
+}

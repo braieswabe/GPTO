@@ -13,6 +13,28 @@ interface DailySeries {
   interactions: number;
 }
 
+function coerceNumber(value: unknown) {
+  if (typeof value === 'number' && Number.isFinite(value)) return value;
+  if (typeof value === 'string' && value.trim() !== '') {
+    const parsed = Number(value);
+    if (Number.isFinite(parsed)) return parsed;
+  }
+  return null;
+}
+
+function readAggregatedCounts(value: Record<string, unknown> | null) {
+  if (!value) return null;
+  const pageViews = coerceNumber(value.pageViews);
+  const interactions = coerceNumber(value.interactions);
+  const searches = coerceNumber(value.searches);
+  if (pageViews === null && interactions === null && searches === null) return null;
+  return {
+    pageViews: pageViews ?? 0,
+    interactions: interactions ?? 0,
+    searches: searches ?? 0,
+  };
+}
+
 function buildDailyKey(date: Date) {
   return date.toISOString().slice(0, 10);
 }
@@ -109,6 +131,7 @@ export async function GET(request: NextRequest) {
     const sessionByDay = new Map<string, Set<string>>();
     const pageCounts = new Map<string, number>();
     const intentCounts = new Map<string, number>();
+    const hasPeriodicByDay = new Set<string>();
 
     let totals = { visits: 0, pageViews: 0, searches: 0, interactions: 0 };
 
@@ -124,15 +147,44 @@ export async function GET(request: NextRequest) {
       };
 
       const eventType = event.eventType || 'custom';
-      if (eventType === 'page_view') {
-        current.pageViews += 1;
-        totals.pageViews += 1;
-      } else if (eventType === 'search') {
-        current.searches += 1;
-        totals.searches += 1;
-      } else if (eventType === 'interaction') {
-        current.interactions += 1;
-        totals.interactions += 1;
+      const context = (event.context as Record<string, unknown> | null) || null;
+      const isPeriodic = context?.periodic === true;
+      const isHeartbeat = context?.heartbeat === true;
+      const periodicAggregated = readAggregatedCounts(
+        isPeriodic && eventType === 'custom'
+          ? ((context?.aggregated as Record<string, unknown>) || null)
+          : null
+      );
+      const heartbeatAggregated = readAggregatedCounts(
+        isHeartbeat
+          ? {
+              pageViews: context?.aggregatedPageViews,
+              interactions: context?.aggregatedInteractions,
+              searches: context?.aggregatedSearches,
+            }
+          : null
+      );
+      const effectiveAggregated = periodicAggregated || heartbeatAggregated;
+
+      if (effectiveAggregated) {
+        current.pageViews += effectiveAggregated.pageViews;
+        current.interactions += effectiveAggregated.interactions;
+        current.searches += effectiveAggregated.searches;
+        totals.pageViews += effectiveAggregated.pageViews;
+        totals.interactions += effectiveAggregated.interactions;
+        totals.searches += effectiveAggregated.searches;
+        hasPeriodicByDay.add(dayKey);
+      } else if (!hasPeriodicByDay.has(dayKey)) {
+        if (eventType === 'page_view') {
+          current.pageViews += 1;
+          totals.pageViews += 1;
+        } else if (eventType === 'search') {
+          current.searches += 1;
+          totals.searches += 1;
+        } else if (eventType === 'interaction') {
+          current.interactions += 1;
+          totals.interactions += 1;
+        }
       }
 
       const sessionId = event.sessionId ? String(event.sessionId) : undefined;
@@ -142,16 +194,16 @@ export async function GET(request: NextRequest) {
         sessionByDay.set(dayKey, set);
       }
 
-      if (eventType === 'page_view') {
-        const page = (event.page as Record<string, unknown> | null) || null;
-        const context = (event.context as Record<string, unknown> | null) || null;
-        const url = (page?.url as string | undefined) || (context?.url as string | undefined);
-        if (url) {
+      const page = (event.page as Record<string, unknown> | null) || null;
+      const url = (page?.url as string | undefined) || (context?.url as string | undefined);
+      if (url) {
+        if (effectiveAggregated?.pageViews) {
+          pageCounts.set(url, (pageCounts.get(url) || 0) + effectiveAggregated.pageViews);
+        } else if (!hasPeriodicByDay.has(dayKey) && eventType === 'page_view') {
           pageCounts.set(url, (pageCounts.get(url) || 0) + 1);
         }
       }
 
-      const context = (event.context as Record<string, unknown> | null) || null;
       const intent = context?.intent as string | undefined;
       if (intent) {
         intentCounts.set(intent, (intentCounts.get(intent) || 0) + 1);

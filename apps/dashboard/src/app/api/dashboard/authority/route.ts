@@ -1,9 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@gpto/database';
 import { telemetryEvents, audits, authoritySignals } from '@gpto/database/src/schema';
-import { and, desc, gte, inArray, lte } from 'drizzle-orm';
+import { and, desc, eq, gte, inArray, lte } from 'drizzle-orm';
 import { AuthenticationError } from '@gpto/api/src/errors';
-import { parseDateRange, getSiteIds } from '@/lib/dashboard-helpers';
+import { parseDateRange, getSiteIds, extractMetrics } from '@/lib/dashboard-helpers';
 
 function toPercent(value: number | undefined) {
   if (typeof value !== 'number' || Number.isNaN(value)) return 0;
@@ -49,14 +49,10 @@ export async function GET(request: NextRequest) {
         )
       );
 
-    const metrics = events.map((event) => event.metrics as Record<string, number>);
-    const authorityValues = metrics.map((m) => m?.['ts.authority']).filter((v): v is number => typeof v === 'number');
-    const authoritySignalsValues = metrics
-      .map((m) => m?.['ai.authoritySignals'])
-      .filter((v): v is number => typeof v === 'number');
-    const schemaCompletenessValues = metrics
-      .map((m) => m?.['ai.schemaCompleteness'])
-      .filter((v): v is number => typeof v === 'number');
+    // Extract and parse metrics (handles both number and string values from JSONB)
+    const authorityValues = extractMetrics(events, 'ts.authority');
+    const authoritySignalsValues = extractMetrics(events, 'ai.authoritySignals');
+    const schemaCompletenessValues = extractMetrics(events, 'ai.schemaCompleteness');
 
     const authorityAvg = authorityValues.length
       ? authorityValues.reduce((a, b) => a + b, 0) / authorityValues.length
@@ -109,16 +105,36 @@ export async function GET(request: NextRequest) {
     const confidence = getConfidence(events.length);
     const authorityScore = Math.round(authorityAvg * 100);
 
-    if (refresh && siteId) {
-      await db.insert(authoritySignals).values({
-        siteId,
-        windowStart: start,
-        windowEnd: end,
-        authorityScore,
-        trustSignals: trustSignals.slice(0, 5),
-        blockers: blockers.slice(0, 5),
-        confidence: confidence.score,
-      });
+    // Auto-generate authority signals if missing and we have events with metrics
+    // Only generate if we have a single site and enough events with metrics
+    const shouldAutoGenerate = siteId && siteIds.length === 1 && authorityValues.length >= 5;
+    
+    if (shouldAutoGenerate || refresh) {
+      // Check if signals already exist for this window
+      const existingSignals = await db
+        .select({ id: authoritySignals.id })
+        .from(authoritySignals)
+        .where(
+          and(
+            eq(authoritySignals.siteId, siteId),
+            gte(authoritySignals.windowStart, start),
+            lte(authoritySignals.windowEnd, end)
+          )
+        )
+        .limit(1);
+
+      // Only generate if signals don't exist or refresh is explicitly requested
+      if (existingSignals.length === 0 || refresh) {
+        await db.insert(authoritySignals).values({
+          siteId,
+          windowStart: start,
+          windowEnd: end,
+          authorityScore,
+          trustSignals: trustSignals.slice(0, 5),
+          blockers: blockers.slice(0, 5),
+          confidence: confidence.score,
+        });
+      }
     }
 
     return NextResponse.json({

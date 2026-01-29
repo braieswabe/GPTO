@@ -44,6 +44,30 @@ A restaurant configuration optimized for local search and reservations.
 - Local SEO optimizations
 - Intent-focused truthseeker weights
 
+### `config-premium.json` (Recommended - All Best Features)
+A comprehensive configuration showcasing all premium features and best practices.
+
+**Features:**
+- **Gold tier** - Highest tier with all features enabled
+- **Periodic telemetry** - Real-time dashboard updates enabled
+- **Complete authority grove** - Multiple partners, trust edges, and corroboration sources
+- **Comprehensive SEO** - All enhancement types enabled with rich content
+- **Multiple products & services** - Full product/service schema support
+- **Extensive FAQs** - 6 detailed FAQ entries
+- **Multiple autofill forms** - 4 different form configurations
+- **Multiple ad slots** - 5 ad slot configurations
+- **Geo nodes enabled** - Maximum cities and attractions
+- **Advanced Truthseeker** - Optimized weights with conflict rules
+- **Detailed telemetry** - All recommended keys plus custom metrics
+- **Multi-geo support** - 7 geographic regions
+- **Enterprise-focused** - Designed for large-scale deployments
+
+**Best For:**
+- Enterprise organizations
+- Companies wanting to showcase all features
+- Reference implementation
+- Learning all available options
+
 ### `config-mapua.json` (Reference)
 The Mapua University Queueing System configuration (located in parent directory as `mapua-config-corrected.json`).
 

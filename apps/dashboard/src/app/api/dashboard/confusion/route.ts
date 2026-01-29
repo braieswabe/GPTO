@@ -1,11 +1,21 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@gpto/database';
 import { telemetryEvents, confusionSignals, contentInventory } from '@gpto/database/src/schema';
-import { and, gte, inArray, lte } from 'drizzle-orm';
+import { and, eq, gte, inArray, lte } from 'drizzle-orm';
 import { AuthenticationError } from '@gpto/api/src/errors';
 import { parseDateRange, getSiteIds } from '@/lib/dashboard-helpers';
 
 const DEAD_END_THRESHOLD_MS = 60_000;
+const PERIODIC_SESSION_ID = 'periodic';
+
+function coerceNumber(value: unknown) {
+  if (typeof value === 'number' && Number.isFinite(value)) return value;
+  if (typeof value === 'string' && value.trim() !== '') {
+    const parsed = Number(value);
+    if (Number.isFinite(parsed)) return parsed;
+  }
+  return null;
+}
 
 function getConfidence(eventCount: number) {
   if (eventCount > 500) return { level: 'High', score: 85 };
@@ -50,6 +60,59 @@ export async function GET(request: NextRequest) {
         )
       );
 
+    const periodicConfusionDetails: {
+      repeatedSearches: Array<{ query: string; count: number }>;
+      deadEnds: Array<{ url: string; at: string }>;
+      dropOffs: Array<{ sessionId?: string; lastEvent?: string }>;
+    } = { repeatedSearches: [], deadEnds: [], dropOffs: [] };
+    let periodicRepeatedCount = 0;
+    let periodicDeadEndsCount = 0;
+    let periodicDropOffsCount = 0;
+    let hasPeriodicConfusion = false;
+
+    for (const event of events) {
+      const context = (event.context as Record<string, unknown> | null) || null;
+      if (context?.periodic !== true) continue;
+      const confusion = (context?.confusion as Record<string, unknown> | null) || null;
+      if (!confusion) continue;
+      hasPeriodicConfusion = true;
+
+      const repeatedCount = coerceNumber(confusion.repeatedSearches);
+      const deadEndsCount = coerceNumber(confusion.deadEnds);
+      const dropOffsCount = coerceNumber(confusion.dropOffs);
+
+      if (repeatedCount !== null) periodicRepeatedCount += repeatedCount;
+      if (deadEndsCount !== null) periodicDeadEndsCount += deadEndsCount;
+      if (dropOffsCount !== null) periodicDropOffsCount += dropOffsCount;
+
+      const repeatedDetails = Array.isArray(confusion.repeatedSearchesDetail)
+        ? (confusion.repeatedSearchesDetail as Array<Record<string, unknown>>)
+        : [];
+      repeatedDetails.forEach((detail) => {
+        const query = typeof detail.query === 'string' ? detail.query : 'unknown';
+        const count = coerceNumber(detail.count) ?? 1;
+        periodicConfusionDetails.repeatedSearches.push({ query, count });
+      });
+
+      const deadEndsDetails = Array.isArray(confusion.deadEndsDetail)
+        ? (confusion.deadEndsDetail as Array<Record<string, unknown>>)
+        : [];
+      deadEndsDetails.forEach((detail) => {
+        const url = typeof detail.url === 'string' ? detail.url : 'unknown';
+        const at = typeof detail.at === 'string' ? detail.at : new Date().toISOString();
+        periodicConfusionDetails.deadEnds.push({ url, at });
+      });
+
+      const dropOffsDetails = Array.isArray(confusion.dropOffsDetail)
+        ? (confusion.dropOffsDetail as Array<Record<string, unknown>>)
+        : [];
+      dropOffsDetails.forEach((detail) => {
+        const sessionId = typeof detail.sessionId === 'string' ? detail.sessionId : undefined;
+        const lastEvent = typeof detail.lastEvent === 'string' ? detail.lastEvent : undefined;
+        periodicConfusionDetails.dropOffs.push({ sessionId, lastEvent });
+      });
+    }
+
     const inventory = await db
       .select({
         siteId: contentInventory.siteId,
@@ -80,45 +143,68 @@ export async function GET(request: NextRequest) {
     const dropOffs: Array<{ sessionId: string; lastEvent: string }> = [];
     const intentMismatches: Array<{ url: string; intent: string; expected: string }> = [];
 
-    for (const [sessionId, sessionEvents] of sessions.entries()) {
-      const sorted = sessionEvents.slice().sort((a, b) => (a.timestamp as Date).getTime() - (b.timestamp as Date).getTime());
+    if (hasPeriodicConfusion) {
+      periodicConfusionDetails.repeatedSearches.forEach((detail) => {
+        repeatedSearches.push({
+          query: detail.query,
+          count: detail.count,
+          sessionId: PERIODIC_SESSION_ID,
+        });
+      });
+      periodicConfusionDetails.deadEnds.forEach((detail) => {
+        deadEnds.push({
+          url: detail.url,
+          at: detail.at,
+          sessionId: PERIODIC_SESSION_ID,
+        });
+      });
+      periodicConfusionDetails.dropOffs.forEach((detail) => {
+        dropOffs.push({
+          sessionId: detail.sessionId || PERIODIC_SESSION_ID,
+          lastEvent: detail.lastEvent || new Date().toISOString(),
+        });
+      });
+    } else {
+      for (const [sessionId, sessionEvents] of sessions.entries()) {
+        const sorted = sessionEvents.slice().sort((a, b) => (a.timestamp as Date).getTime() - (b.timestamp as Date).getTime());
 
-      const searchCounts = new Map<string, number>();
-      for (const event of sorted) {
-        const eventType = event.eventType || 'custom';
-        if (eventType === 'search') {
-          const search = (event.search as Record<string, unknown> | null) || null;
-          const context = (event.context as Record<string, unknown> | null) || null;
-          const query = (search?.query as string | undefined) || (context?.search_query as string | undefined);
-          if (query) {
-            searchCounts.set(query, (searchCounts.get(query) || 0) + 1);
+        const searchCounts = new Map<string, number>();
+        for (const event of sorted) {
+          const eventType = event.eventType || 'custom';
+          if (eventType === 'search') {
+            const search = (event.search as Record<string, unknown> | null) || null;
+            const context = (event.context as Record<string, unknown> | null) || null;
+            const query = (search?.query as string | undefined) || (context?.search_query as string | undefined);
+            if (query) {
+              searchCounts.set(query, (searchCounts.get(query) || 0) + 1);
+            }
           }
         }
-      }
 
-      for (const [query, count] of searchCounts.entries()) {
-        if (count > 1) {
-          repeatedSearches.push({ query, count, sessionId });
+        for (const [query, count] of searchCounts.entries()) {
+          if (count > 1) {
+            repeatedSearches.push({ query, count, sessionId });
+          }
         }
-      }
 
-      for (let i = 0; i < sorted.length; i += 1) {
-        const event = sorted[i];
-        if (event.eventType !== 'page_view') continue;
-        const next = sorted[i + 1];
-        const time = (event.timestamp as Date).getTime();
-        const nextTime = next ? (next.timestamp as Date).getTime() : undefined;
-        if (!nextTime || nextTime - time > DEAD_END_THRESHOLD_MS) {
-          const page = (event.page as Record<string, unknown> | null) || null;
-          const context = (event.context as Record<string, unknown> | null) || null;
-          const url = (page?.url as string | undefined) || (context?.url as string | undefined) || 'unknown';
-          deadEnds.push({ url, at: new Date(time).toISOString(), sessionId });
+        for (let i = 0; i < sorted.length; i += 1) {
+          const event = sorted[i];
+          if (event.eventType !== 'page_view') continue;
+          const next = sorted[i + 1];
+          const time = (event.timestamp as Date).getTime();
+          const nextTime = next ? (next.timestamp as Date).getTime() : undefined;
+          if (!nextTime || nextTime - time > DEAD_END_THRESHOLD_MS) {
+            const page = (event.page as Record<string, unknown> | null) || null;
+            const context = (event.context as Record<string, unknown> | null) || null;
+            const url = (page?.url as string | undefined) || (context?.url as string | undefined) || 'unknown';
+            deadEnds.push({ url, at: new Date(time).toISOString(), sessionId });
+          }
         }
-      }
 
-      const lastEvent = sorted[sorted.length - 1];
-      if (sorted.length <= 2 && lastEvent?.eventType === 'page_view') {
-        dropOffs.push({ sessionId, lastEvent: (lastEvent.timestamp as Date).toISOString() });
+        const lastEvent = sorted[sorted.length - 1];
+        if (sorted.length <= 2 && lastEvent?.eventType === 'page_view') {
+          dropOffs.push({ sessionId, lastEvent: (lastEvent.timestamp as Date).toISOString() });
+        }
       }
     }
 
@@ -136,47 +222,67 @@ export async function GET(request: NextRequest) {
     }
 
     const totals = {
-      repeatedSearches: repeatedSearches.length,
-      deadEnds: deadEnds.length,
-      dropOffs: dropOffs.length,
+      repeatedSearches: hasPeriodicConfusion && periodicRepeatedCount > 0 ? periodicRepeatedCount : repeatedSearches.length,
+      deadEnds: hasPeriodicConfusion && periodicDeadEndsCount > 0 ? periodicDeadEndsCount : deadEnds.length,
+      dropOffs: hasPeriodicConfusion && periodicDropOffsCount > 0 ? periodicDropOffsCount : dropOffs.length,
       intentMismatches: intentMismatches.length,
     };
 
     const confidence = getConfidence(events.length);
 
-    if (refresh && siteId) {
-      await db.insert(confusionSignals).values({
-        siteId,
-        windowStart: start,
-        windowEnd: end,
-        type: 'repeated_search',
-        score: totals.repeatedSearches,
-        evidence: repeatedSearches.slice(0, 5),
-      });
-      await db.insert(confusionSignals).values({
-        siteId,
-        windowStart: start,
-        windowEnd: end,
-        type: 'dead_end',
-        score: totals.deadEnds,
-        evidence: deadEnds.slice(0, 5),
-      });
-      await db.insert(confusionSignals).values({
-        siteId,
-        windowStart: start,
-        windowEnd: end,
-        type: 'drop_off',
-        score: totals.dropOffs,
-        evidence: dropOffs.slice(0, 5),
-      });
-      await db.insert(confusionSignals).values({
-        siteId,
-        windowStart: start,
-        windowEnd: end,
-        type: 'intent_mismatch',
-        score: totals.intentMismatches,
-        evidence: intentMismatches.slice(0, 5),
-      });
+    // Auto-generate signals if missing and we have events to process
+    // Only generate if we have enough data (at least 5 events) and signals don't exist
+    const shouldAutoGenerate = events.length >= 5 && siteId && siteIds.length === 1;
+    
+    if (shouldAutoGenerate || refresh) {
+      // Check if signals already exist for this window
+      const existingSignals = await db
+        .select({ id: confusionSignals.id })
+        .from(confusionSignals)
+        .where(
+          and(
+            eq(confusionSignals.siteId, siteId!),
+            gte(confusionSignals.windowStart, start),
+            lte(confusionSignals.windowEnd, end)
+          )
+        )
+        .limit(1);
+
+      // Only generate if signals don't exist or refresh is explicitly requested
+      if (existingSignals.length === 0 || refresh) {
+        await db.insert(confusionSignals).values({
+          siteId: siteId!,
+          windowStart: start,
+          windowEnd: end,
+          type: 'repeated_search',
+          score: totals.repeatedSearches,
+          evidence: repeatedSearches.slice(0, 5),
+        });
+        await db.insert(confusionSignals).values({
+          siteId: siteId!,
+          windowStart: start,
+          windowEnd: end,
+          type: 'dead_end',
+          score: totals.deadEnds,
+          evidence: deadEnds.slice(0, 5),
+        });
+        await db.insert(confusionSignals).values({
+          siteId: siteId!,
+          windowStart: start,
+          windowEnd: end,
+          type: 'drop_off',
+          score: totals.dropOffs,
+          evidence: dropOffs.slice(0, 5),
+        });
+        await db.insert(confusionSignals).values({
+          siteId: siteId!,
+          windowStart: start,
+          windowEnd: end,
+          type: 'intent_mismatch',
+          score: totals.intentMismatches,
+          evidence: intentMismatches.slice(0, 5),
+        });
+      }
     }
 
     return NextResponse.json({

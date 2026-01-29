@@ -629,7 +629,7 @@ function DashboardContent() {
     },
   ];
 
-  const handleExport = (format: 'pdf' | 'slides') => {
+  const handleExport = (format: 'pdf') => {
     if (typeof window === 'undefined') return;
     window.location.href = `/api/dashboard/export?format=${format}&range=${timeRange}`;
   };
@@ -763,19 +763,26 @@ function DashboardContent() {
                 <button
                   type="button"
                   onClick={() => handleExport('pdf')}
-                  className="flex-1 rounded-lg border border-gray-300 px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 hover:border-gray-400 transition-colors"
+                  className="flex-1 rounded-lg border border-blue-600 bg-blue-600 px-3 py-2 text-sm font-semibold text-white shadow-sm shadow-blue-200 hover:bg-blue-700 hover:border-blue-700 transition-colors flex items-center justify-center gap-2"
                 >
-                  PDF
+                  <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16h10M7 12h10m-7-4h7M5 20h14a1 1 0 001-1V7l-5-4H5a1 1 0 00-1 1v15a1 1 0 001 1z" />
+                  </svg>
+                  Export PDF
                 </button>
                 <button
                   type="button"
-                  onClick={() => handleExport('slides')}
-                  className="flex-1 rounded-lg border border-gray-300 px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 hover:border-gray-400 transition-colors"
+                  disabled
+                  className="flex-1 rounded-lg border border-gray-200 px-3 py-2 text-sm font-medium text-gray-400 bg-gray-50 cursor-not-allowed flex items-center justify-center gap-2"
+                  title="Slides export coming soon"
                 >
+                  <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 3h10M4 6h16M9 6v15m6-15v15M7 21h10" />
+                  </svg>
                   Slides
                 </button>
               </div>
-              <p className="mt-2 text-xs text-gray-500">Export exec-ready reports.</p>
+              <p className="mt-2 text-xs text-gray-500">Export executive-ready reports.</p>
             </div>
 
             <div className="rounded-xl border border-gray-200 bg-gradient-to-br from-emerald-50 to-white p-5 hover:shadow-md transition-all">
@@ -813,22 +820,39 @@ function DashboardContent() {
             {hasSites ? (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
                 {sitesList.map((site) => (
-                  <Link key={site.id} href={`/dashboard/reports/${site.id}`}>
-                    <div className="rounded-lg border border-gray-200 bg-white p-4 hover:shadow-md hover:border-blue-300 transition-all group cursor-pointer">
-                      <div className="flex items-center justify-between">
-                        <p className="text-sm font-semibold text-gray-900 truncate group-hover:text-blue-600 transition-colors">{site.domain}</p>
-                        <span className={`text-xs font-medium px-2 py-1 rounded-full ${
-                          site.status === 'active' 
-                            ? 'bg-emerald-100 text-emerald-700' 
-                            : 'bg-amber-100 text-amber-700'
-                        }`}>
-                          {site.status ? site.status : 'pending'}
-                        </span>
-                      </div>
-                      <p className="mt-2 text-xs text-gray-500">Tenant: {selectedTenant}</p>
-                      <p className="mt-1 text-xs text-blue-600 group-hover:text-blue-700">View Report →</p>
+                  <div key={site.id} className="rounded-lg border border-gray-200 bg-white p-4 hover:shadow-md hover:border-blue-300 transition-all group">
+                    <div className="flex items-center justify-between">
+                      <p className="text-sm font-semibold text-gray-900 truncate group-hover:text-blue-600 transition-colors">{site.domain}</p>
+                      <span className={`text-xs font-medium px-2 py-1 rounded-full ${
+                        site.status === 'active' 
+                          ? 'bg-emerald-100 text-emerald-700' 
+                          : 'bg-amber-100 text-amber-700'
+                      }`}>
+                        {site.status ? site.status : 'pending'}
+                      </span>
                     </div>
-                  </Link>
+                    <p className="mt-2 text-xs text-gray-500">Tenant: {selectedTenant}</p>
+                    <div className="mt-3 flex items-center gap-2">
+                      <Link
+                        href={`/dashboard/reports/${site.id}?range=${timeRange}`}
+                        className="inline-flex items-center gap-1 rounded-md bg-blue-50 px-2.5 py-1.5 text-xs font-semibold text-blue-700 hover:bg-blue-100 transition-colors"
+                      >
+                        <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                        </svg>
+                        View Report
+                      </Link>
+                      <a
+                        href={`/api/dashboard/export?siteId=${site.id}&range=${timeRange}&format=pdf`}
+                        className="inline-flex items-center gap-1 rounded-md border border-gray-200 px-2.5 py-1.5 text-xs font-medium text-gray-600 hover:border-gray-300 hover:bg-gray-50 transition-colors"
+                      >
+                        <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16h10M7 12h10m-7-4h7M5 20h14a1 1 0 001-1V7l-5-4H5a1 1 0 00-1 1v15a1 1 0 001 1z" />
+                        </svg>
+                        PDF
+                      </a>
+                    </div>
+                  </div>
                 ))}
               </div>
             ) : (

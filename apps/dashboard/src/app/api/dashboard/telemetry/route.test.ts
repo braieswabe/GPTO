@@ -3,6 +3,7 @@ import { GET } from './route';
 import { NextRequest } from 'next/server';
 import { db } from '@gpto/database';
 import { telemetryEvents } from '@gpto/database/src/schema';
+import { getSiteIds } from '@/lib/dashboard-helpers';
 
 // Mock dependencies
 vi.mock('@gpto/database', () => ({
@@ -47,14 +48,14 @@ describe('GET /api/dashboard/telemetry', () => {
         context: null,
       },
     ];
-
-    const mockSelect = vi.fn().mockReturnValue({
+    const mockSelect = (result: unknown) => ({
       from: vi.fn().mockReturnValue({
-        where: vi.fn().mockResolvedValue(mockEvents),
+        where: vi.fn().mockResolvedValue(result),
       }),
     });
-
-    vi.mocked(db.select).mockReturnValue(mockSelect as any);
+    vi.mocked(db.select)
+      .mockReturnValueOnce(mockSelect(mockEvents) as any)
+      .mockReturnValueOnce(mockSelect([]) as any);
 
     const request = new NextRequest('http://localhost/api/dashboard/telemetry?range=7d', {
       headers: {
@@ -71,8 +72,54 @@ describe('GET /api/dashboard/telemetry', () => {
     expect(data).toHaveProperty('series');
   });
 
+  it('should prefer periodic aggregated counts over raw events', async () => {
+    const mockEvents = [
+      {
+        timestamp: new Date('2025-01-05T10:00:00Z'),
+        eventType: 'custom',
+        sessionId: 'session-1',
+        page: { url: 'https://example.com/page1' },
+        context: {
+          periodic: true,
+          aggregated: { pageViews: 10, interactions: 4, searches: 2 },
+          intent: 'demo',
+        },
+      },
+      {
+        timestamp: new Date('2025-01-05T10:01:00Z'),
+        eventType: 'page_view',
+        sessionId: 'session-1',
+        page: { url: 'https://example.com/page1' },
+        context: null,
+      },
+    ];
+    const mockSelect = (result: unknown) => ({
+      from: vi.fn().mockReturnValue({
+        where: vi.fn().mockResolvedValue(result),
+      }),
+    });
+    vi.mocked(db.select)
+      .mockReturnValueOnce(mockSelect(mockEvents) as any)
+      .mockReturnValueOnce(mockSelect([]) as any);
+
+    const request = new NextRequest('http://localhost/api/dashboard/telemetry?range=7d', {
+      headers: {
+        authorization: 'Bearer mock-token',
+      },
+    });
+
+    const response = await GET(request);
+    const data = await response.json();
+
+    expect(response.status).toBe(200);
+    expect(data.totals.pageViews).toBe(10);
+    expect(data.totals.interactions).toBe(4);
+    expect(data.totals.searches).toBe(2);
+    expect(data.topPages[0]).toMatchObject({ url: 'https://example.com/page1', count: 10 });
+  });
+
   it('should handle empty site list', async () => {
-    vi.mocked(require('@/lib/dashboard-helpers').getSiteIds).mockResolvedValue([]);
+    vi.mocked(getSiteIds).mockResolvedValue([]);
 
     const request = new NextRequest('http://localhost/api/dashboard/telemetry?range=7d', {
       headers: {

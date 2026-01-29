@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { POST } from './route';
 import { NextRequest } from 'next/server';
+import { db } from '@gpto/database';
 
 // Mock dependencies
 vi.mock('@gpto/database', () => ({
@@ -17,7 +18,7 @@ describe('POST /api/cron/refresh-rollups', () => {
     vi.clearAllMocks();
     process.env.CRON_SECRET = 'test-secret';
     
-    vi.mocked(require('@gpto/database').db.select).mockReturnValue({
+    vi.mocked(db.select).mockReturnValue({
       from: vi.fn().mockResolvedValue([
         { id: 'site-1' },
         { id: 'site-2' },

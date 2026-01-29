@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
-import { useParams } from 'next/navigation';
+import { useParams, useSearchParams } from 'next/navigation';
 import { useQuery } from '@tanstack/react-query';
 import { ProtectedRoute } from '@/components/ProtectedRoute';
 import Link from 'next/link';
@@ -43,7 +43,7 @@ interface SiteReport {
 }
 
 async function fetchSiteReport(siteId: string, range: string = '30d'): Promise<SiteReport> {
-  const token = localStorage.getItem('authToken');
+  const token = localStorage.getItem('token') || localStorage.getItem('authToken');
   const baseUrl = window.location.origin;
   
   const [telemetry, confusion, authority, schema, coverage, executive, site] = await Promise.all([
@@ -86,7 +86,9 @@ async function fetchSiteReport(siteId: string, range: string = '30d'): Promise<S
 export default function SiteReportPage() {
   const params = useParams();
   const siteId = params.siteId as string;
-  const [timeRange, setTimeRange] = React.useState<'7d' | '30d' | 'custom'>('30d');
+  const searchParams = useSearchParams();
+  const initialRange = (searchParams.get('range') as '7d' | '30d' | 'custom') || '30d';
+  const [timeRange, setTimeRange] = React.useState<'7d' | '30d' | 'custom'>(initialRange);
 
   const { data, isLoading } = useQuery({
     queryKey: ['site-report', siteId, timeRange],
@@ -142,10 +144,13 @@ export default function SiteReportPage() {
                 <option value="30d">Last 30 days</option>
               </select>
               <Link
-                href={`/api/dashboard/export?siteId=${siteId}&range=${timeRange}&format=json`}
-                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+                href={`/api/dashboard/export?siteId=${siteId}&range=${timeRange}&format=pdf`}
+                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 inline-flex items-center gap-2"
               >
-                Export Report
+                <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16h10M7 12h10m-7-4h7M5 20h14a1 1 0 001-1V7l-5-4H5a1 1 0 00-1 1v15a1 1 0 001 1z" />
+                </svg>
+                Export PDF
               </Link>
             </div>
           </div>

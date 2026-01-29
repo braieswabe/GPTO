@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { GET } from './route';
 import { NextRequest } from 'next/server';
+import { db } from '@gpto/database';
 
 // Mock dependencies
 vi.mock('@gpto/database', () => ({
@@ -51,13 +52,15 @@ describe('GET /api/dashboard/confusion', () => {
       },
     ];
 
-    const mockSelect = vi.fn().mockReturnValue({
+    const mockSelect = (result: unknown) => ({
       from: vi.fn().mockReturnValue({
-        where: vi.fn().mockResolvedValue(mockEvents),
+        where: vi.fn().mockResolvedValue(result),
       }),
     });
 
-    vi.mocked(require('@gpto/database').db.select).mockReturnValue(mockSelect as any);
+    vi.mocked(db.select)
+      .mockReturnValueOnce(mockSelect(mockEvents) as any)
+      .mockReturnValueOnce(mockSelect([]) as any);
 
     const request = new NextRequest('http://localhost/api/dashboard/confusion?range=7d', {
       headers: {
@@ -72,5 +75,54 @@ describe('GET /api/dashboard/confusion', () => {
     expect(data).toHaveProperty('totals');
     expect(data).toHaveProperty('signals');
     expect(data).toHaveProperty('confidence');
+  });
+
+  it('should use periodic confusion context when available', async () => {
+    const mockEvents = [
+      {
+        timestamp: new Date('2025-01-06'),
+        eventType: 'custom',
+        sessionId: 'session-1',
+        page: { url: 'https://example.com/page1' },
+        search: null,
+        context: {
+          periodic: true,
+          confusion: {
+            repeatedSearches: 2,
+            deadEnds: 1,
+            dropOffs: 1,
+            repeatedSearchesDetail: [{ query: 'pricing', count: 2 }],
+            deadEndsDetail: [{ url: 'https://example.com/page1', at: '2025-01-06T00:00:00Z' }],
+            dropOffsDetail: [{ sessionId: 'session-9', lastEvent: '2025-01-06T00:01:00Z' }],
+          },
+        },
+        siteId: 'site-1',
+      },
+    ];
+
+    const mockSelect = (result: unknown) => ({
+      from: vi.fn().mockReturnValue({
+        where: vi.fn().mockResolvedValue(result),
+      }),
+    });
+
+    vi.mocked(db.select)
+      .mockReturnValueOnce(mockSelect(mockEvents) as any)
+      .mockReturnValueOnce(mockSelect([]) as any);
+
+    const request = new NextRequest('http://localhost/api/dashboard/confusion?range=7d', {
+      headers: {
+        authorization: 'Bearer mock-token',
+      },
+    });
+
+    const response = await GET(request);
+    const data = await response.json();
+
+    expect(response.status).toBe(200);
+    expect(data.totals.repeatedSearches).toBe(2);
+    expect(data.totals.deadEnds).toBe(1);
+    expect(data.totals.dropOffs).toBe(1);
+    expect(data.signals.repeatedSearches[0]).toMatchObject({ query: 'pricing', count: 2 });
   });
 });

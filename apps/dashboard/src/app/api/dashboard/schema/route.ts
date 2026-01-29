@@ -3,7 +3,7 @@ import { db } from '@gpto/database';
 import { telemetryEvents } from '@gpto/database/src/schema';
 import { and, gte, inArray, lte } from 'drizzle-orm';
 import { AuthenticationError } from '@gpto/api/src/errors';
-import { parseDateRange, getSiteIds } from '@/lib/dashboard-helpers';
+import { parseDateRange, getSiteIds, parseMetricValue } from '@/lib/dashboard-helpers';
 
 function average(values: number[]) {
   if (values.length === 0) return 0;
@@ -45,14 +45,17 @@ export async function GET(request: NextRequest) {
     let broken = 0;
 
     for (const event of events) {
-      const metrics = event.metrics as Record<string, number>;
-      const completeness = metrics?.['ai.schemaCompleteness'];
-      const quality = metrics?.['ai.structuredDataQuality'];
-      if (typeof completeness === 'number') {
+      const metrics = event.metrics as Record<string, unknown> | null;
+      if (!metrics) continue;
+      
+      const completeness = parseMetricValue(metrics['ai.schemaCompleteness']);
+      const quality = parseMetricValue(metrics['ai.structuredDataQuality']);
+      
+      if (completeness !== null) {
         completenessValues.push(completeness);
         if (completeness < 0.6) missing += 1;
       }
-      if (typeof quality === 'number') {
+      if (quality !== null) {
         qualityValues.push(quality);
         if (quality < 0.6) broken += 1;
       }
