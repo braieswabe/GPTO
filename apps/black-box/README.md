@@ -33,6 +33,53 @@ The runtime reads JSON configuration from your GPTO dashboard and automatically:
 
 ## Usage
 
+### Quick Start Guide
+
+#### Step 1: Install Black Box Script (Client-Side)
+
+Add this script tag to your website to enable Black Box and telemetry:
+
+```html
+<script
+  src="https://gpto-dashboard.vercel.app/black-box.js"
+  data-config-url="https://gpto-dashboard.vercel.app/api/sites/[your-site-id]/config"
+  data-telemetry-url="https://gpto-dashboard.vercel.app/api/telemetry/events"
+  data-site-id="[your-site-id]"
+  async
+></script>
+```
+
+**Replace `[your-site-id]` with your actual site ID from the GPTO dashboard.**
+
+#### Step 2: (Recommended) Add Server-Side Schema Injection
+
+For optimal visibility with external audit tools, inject schemas server-side. Schemas update automatically when your configuration changes.
+
+**Option A: Schema Render Endpoint**
+
+Fetch schemas and inject into your HTML template:
+
+```typescript
+// Next.js / React
+const schemas = await fetch('https://gpto-dashboard.vercel.app/api/sites/[your-site-id]/render');
+const schemaHTML = await schemas.text();
+
+// Inject into HTML
+<div dangerouslySetInnerHTML={{ __html: schemaHTML }} />
+```
+
+**Option B: Proxy Endpoint**
+
+Use for external audit tools or testing:
+
+```
+https://gpto-dashboard.vercel.app/api/sites/[your-site-id]/proxy?url=https://your-domain.com
+```
+
+Replace `your-domain.com` with your actual domain.
+
+**✅ Automatic Updates:** Schemas are generated from your configuration and update automatically. No manual HTML edits needed!
+
 ### Installation
 
 #### Using pnpm (Recommended)
@@ -45,7 +92,7 @@ pnpm add @careerdriver/black-box
 pnpm add -D @careerdriver/black-box
 
 # Install specific version
-pnpm add @careerdriver/black-box@1.2.0
+pnpm add @careerdriver/black-box@1.2.2
 
 # Install latest version (includes periodic telemetry)
 pnpm add @careerdriver/black-box@latest
@@ -60,7 +107,7 @@ pnpm add @careerdriver/black-box@latest
 npm install @careerdriver/black-box@latest
 
 # Install specific version
-npm install @careerdriver/black-box@1.2.0
+npm install @careerdriver/black-box@1.2.2
 ```
 
 #### Using yarn
@@ -70,7 +117,7 @@ npm install @careerdriver/black-box@1.2.0
 yarn add @careerdriver/black-box@latest
 
 # Install specific version
-yarn add @careerdriver/black-box@1.2.0
+yarn add @careerdriver/black-box@1.2.2
 ```
 
 ### ESM Import Usage
@@ -103,7 +150,7 @@ Add the script tag to your HTML:
 ></script>
 ```
 
-**Note:** The `@latest` version includes periodic telemetry (v1.2.0+). To use a specific version, replace `@latest` with `@1.2.0` or your preferred version.
+**Note:** The `@latest` version includes periodic telemetry (v1.2.0+). To use a specific version, replace `@latest` with `@1.2.2` or your preferred version.
 
 #### Via Local Installation
 
@@ -282,7 +329,7 @@ Deploy to Vercel CDN for global distribution. The file should be served with app
 
 ## Version
 
-**Current Version:** `1.2.0`
+**Current Version:** `1.2.2`
 
 ### What's New in v1.2.0
 
