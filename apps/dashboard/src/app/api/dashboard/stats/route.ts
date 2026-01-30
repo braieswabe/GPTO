@@ -186,9 +186,24 @@ export async function GET(request: NextRequest) {
         .where(inArray(audits.siteId, siteIds))
         .orderBy(desc(audits.createdAt))
         .limit(10);
-    } catch (auditError) {
+    } catch (auditError: unknown) {
       // Handle gracefully if audits table doesn't exist (migration not run yet)
-      console.warn('Audits table query failed, continuing without audit data:', auditError);
+      const errorMessage = auditError instanceof Error ? auditError.message : String(auditError);
+      const errorCause = (auditError as { cause?: { code?: string; message?: string } })?.cause;
+      const errorCode = errorCause?.code || (auditError as { code?: string })?.code;
+      const causeMessage = errorCause?.message || '';
+      const isTableMissing = errorMessage.includes('does not exist') || 
+                             errorMessage.includes('relation') ||
+                             causeMessage.includes('does not exist') ||
+                             causeMessage.includes('relation') ||
+                             errorCode === '42P01';
+      // Error code 42P01 = "relation does not exist" in PostgreSQL
+      if (isTableMissing) {
+        console.warn('Audits table does not exist (migration may not have run), continuing without audit data');
+      } else {
+        console.error('Audits table query failed with unexpected error:', auditError);
+      }
+      // Continue with empty audits array - the rest of the code handles this gracefully
     }
 
     // Get site domains for audits

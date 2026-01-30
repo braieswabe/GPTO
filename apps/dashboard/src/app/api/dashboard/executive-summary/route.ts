@@ -133,12 +133,27 @@ export async function GET(request: NextRequest) {
       // #region agent log
       fetch('http://127.0.0.1:7251/ingest/f2bef142-91a5-4d7a-be78-4c2383eb5638',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'api/dashboard/executive-summary/route.ts:127',message:'Audits query succeeded',data:{auditsCount:latestAudits.length},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A'})}).catch(()=>{});
       // #endregion
-    } catch (auditError) {
+    } catch (auditError: unknown) {
       // #region agent log
-      fetch('http://127.0.0.1:7251/ingest/f2bef142-91a5-4d7a-be78-4c2383eb5638',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'api/dashboard/executive-summary/route.ts:131',message:'Audits query failed',data:{error:auditError instanceof Error ? auditError.message : String(auditError)},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'B'})}).catch(()=>{});
+      const errorMessage = auditError instanceof Error ? auditError.message : String(auditError);
+      const errorCause = (auditError as { cause?: { code?: string; message?: string } })?.cause;
+      const errorCode = errorCause?.code || (auditError as { code?: string })?.code;
+      const causeMessage = errorCause?.message || '';
+      const isTableMissing = errorMessage.includes('does not exist') || 
+                             errorMessage.includes('relation') ||
+                             causeMessage.includes('does not exist') ||
+                             causeMessage.includes('relation') ||
+                             errorCode === '42P01';
+      fetch('http://127.0.0.1:7251/ingest/f2bef142-91a5-4d7a-be78-4c2383eb5638',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'api/dashboard/executive-summary/route.ts:136',message:'Audits query failed',data:{error:errorMessage,causeMessage,code:errorCode,isTableMissing},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'B'})}).catch(()=>{});
       // #endregion
       // Handle gracefully if audits table doesn't exist (migration not run yet)
-      console.warn('Audits table query failed, continuing without audit data:', auditError);
+      // Error code 42P01 = "relation does not exist" in PostgreSQL
+      if (isTableMissing) {
+        console.warn('Audits table does not exist (migration may not have run), continuing without audit data');
+      } else {
+        console.error('Audits table query failed with unexpected error:', auditError);
+      }
+      // Continue with empty audits array - the rest of the code handles this gracefully
     }
 
     const auditBySite = new Map<string, Record<string, unknown>>();
