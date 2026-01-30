@@ -27,7 +27,6 @@ export function Navigation() {
   const protectedNavItems = [
     { href: '/dashboard', label: 'Dashboard' },
     { href: '/sites', label: 'Sites' },
-    { href: '/chat', label: 'PantheraChat' },
     { href: '/settings', label: 'Settings' },
   ];
 

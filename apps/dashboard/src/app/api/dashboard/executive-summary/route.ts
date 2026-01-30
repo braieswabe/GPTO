@@ -195,43 +195,64 @@ export async function GET(request: NextRequest) {
           ? Array.from(new Set(auditCoverageGaps)).join(', ')
           : 'key stages';
 
+    // Helper function to format URLs for display (remove protocol, truncate if needed)
+    const formatPageUrl = (url: string): string => {
+      const cleanUrl = url.replace(/^https?:\/\//, '').replace(/\/$/, '');
+      return cleanUrl.length > 50 ? cleanUrl.substring(0, 47) + '...' : cleanUrl;
+    };
+
+    // Helper function to translate coverage gaps to plain language
+    const translateCoverageGaps = (gaps: string[]): string => {
+      const translations: Record<string, string> = {
+        'awareness': 'helping people discover your business',
+        'consideration': 'helping people evaluate your solution',
+        'decision': 'helping people make a purchase decision',
+        'retention': 'helping existing customers stay engaged',
+        'what coverage': 'explaining what you do clearly',
+        'who coverage': 'identifying who your customers are',
+        'how coverage': 'explaining how your solution works',
+        'trust proof': 'showing proof that you\'re trustworthy',
+      };
+      return gaps.map(gap => translations[gap] || gap).join(', ');
+    };
+
     const insights = [
       {
         question: "What's working?",
         answer: hasTelemetry && topPage
-          ? `Traffic concentrates on ${topPage[0]} and authority holds steady at ${Math.round(authorityAvg * 100)}.`
+          ? `Your most popular page "${formatPageUrl(topPage[0])}" is performing well, and visitors trust your content (${Math.round(authorityAvg * 100)}% trust score). This page is clearly helping people - keep creating content like this!`
           : null,
       },
       {
         question: "What's broken?",
         answer: hasConfusion
-          ? `Confusion signals detected (${confusionTotal || periodicConfusionTotal} total).`
+          ? `Visitors are struggling to find what they need. We detected ${confusionTotal || periodicConfusionTotal} instances where people searched multiple times for the same thing, hit dead ends, or left frustrated. This means you're losing potential customers who can't find answers.`
           : hasTelemetry
-            ? 'No major confusion signals detected yet.'
+            ? 'Great news! Visitors are finding what they need without major problems. Keep up the good work!'
             : null,
       },
       {
         question: 'What should we change?',
         answer: hasCoverage
-          ? `Coverage gaps remain in ${coverageStageSummary}.`
+          ? `You need to add more content about: ${translateCoverageGaps(coverageMissingStages.length > 0 ? coverageMissingStages : auditCoverageGaps)}. Visitors are looking for this information but can't find it on your website. Adding it will help more people find what they need.`
           : hasTelemetry || auditBySite.size > 0
-            ? 'Coverage signals are still warming up; sync content inventory to surface gaps.'
+            ? 'We\'re still analyzing your content to find gaps. Check back in a day or two for specific recommendations on what to add.'
             : null,
       },
       {
         question: 'What should we stop?',
         answer: hasConfusion
-          ? 'Stop investing in flows with repeated searches and dead ends until fixes land.'
+          ? `Don't promote pages where visitors repeatedly search for the same thing or hit dead ends. These pages are frustrating people and causing them to leave. Fix the problems first, then promote them again.`
           : hasTelemetry
-            ? 'No stop signals yet; keep monitoring friction.'
+            ? 'No major issues to stop right now. Keep an eye on things and fix problems as they come up.'
             : null,
       },
       {
         question: 'What should we double down on or sell?',
         answer: hasAuthority
-          ? `Double down on pages with authority lift (score ${authority[0]?.authorityScore ?? Math.round(authorityAvg * 100)}).`
+          ? `Your best-performing pages have a trust score of ${authority[0]?.authorityScore ?? Math.round(authorityAvg * 100)}/100 - visitors find them helpful and trustworthy. These are your winners! Create more content like this, promote these pages more, and use them as examples for new content.`
           : hasTelemetry && topPage
-            ? `Double down on ${topPage[0]} (highest traffic right now).`
+            ? `Your most visited page "${formatPageUrl(topPage[0])}" is clearly what visitors want. Create more pages like this one, or promote this page more heavily in your marketing.`
             : null,
       },
     ];

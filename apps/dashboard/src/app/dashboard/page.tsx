@@ -7,6 +7,8 @@ import { ProtectedRoute } from '@/components/ProtectedRoute';
 import { UserRole } from '@gpto/shared';
 import { useAuth } from '@/contexts/AuthContext';
 import { ScoringMethodology } from '@/components/ScoringMethodology';
+import { HelpTooltip, TERM_EXPLANATIONS } from '@/components/HelpTooltip';
+import { AIReportCard } from '@/components/AIReportCard';
 
 function getTimeAgo(date: Date): string {
   const seconds = Math.floor((new Date().getTime() - date.getTime()) / 1000);
@@ -179,7 +181,23 @@ async function fetchDashboardData(range: '7d' | '30d' | 'custom', siteId: string
   }
 }
 
-function NoDataState({ helper }: { helper?: string }) {
+function NoDataState({ helper, requiresSiteSelection }: { helper?: string; requiresSiteSelection?: boolean }) {
+  if (requiresSiteSelection) {
+    return (
+      <div className="mt-4 rounded-xl border border-dashed border-blue-300 bg-gradient-to-br from-blue-50 to-white p-5 text-center">
+        <div className="h-10 w-10 rounded-full bg-blue-100 flex items-center justify-center mx-auto mb-2">
+          <svg className="h-5 w-5 text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+          </svg>
+        </div>
+        <p className="font-semibold text-blue-700 text-sm">Please select a site</p>
+        <p className="mt-1.5 text-xs text-blue-600 leading-relaxed">
+          Select a specific site from the dropdown above to view data for this dashboard.
+        </p>
+      </div>
+    );
+  }
+
   return (
     <div className="mt-4 rounded-xl border border-dashed border-gray-300 bg-gradient-to-br from-gray-50 to-white p-5 text-center">
       <div className="h-10 w-10 rounded-full bg-gray-100 flex items-center justify-center mx-auto mb-2">
@@ -475,35 +493,40 @@ function DashboardContent() {
     {
       id: 'telemetry',
       name: 'Telemetry',
-      description: 'What people are doing once data exists.',
+      description: 'See how visitors use your website - what they view, search for, and interact with.',
+      explanation: TERM_EXPLANATIONS.telemetry,
       highlights: telemetryHighlights,
       ...resolveDashboardMeta('telemetry'),
     },
     {
       id: 'confusion',
       name: 'Confusion & mismatch',
-      description: 'Where users get stuck, loop, or bounce.',
+      description: 'Identify where visitors get stuck or frustrated - repeated searches, dead ends, and mismatched expectations.',
+      explanation: TERM_EXPLANATIONS['confusion signals'],
       highlights: confusionHighlights,
       ...resolveDashboardMeta('confusion'),
     },
     {
       id: 'authority',
       name: 'Authority & trust',
-      description: 'Trust signals, confidence gaps, and blockers.',
+      description: 'Measure how trustworthy your website appears to search engines and AI tools.',
+      explanation: TERM_EXPLANATIONS['authority signals'],
       highlights: authorityHighlights,
       ...resolveDashboardMeta('authority'),
     },
     {
       id: 'schema',
       name: 'Schema & structure',
-      description: 'Structured data coverage and breakage.',
+      description: 'Check how well your website content is organized so search engines can understand it.',
+      explanation: TERM_EXPLANATIONS.schema,
       highlights: schemaHighlights,
       ...resolveDashboardMeta('schema'),
     },
     {
       id: 'coverage',
       name: 'Coverage & gaps',
-      description: 'Missing content and funnel stages.',
+      description: 'Find missing content that visitors are looking for but can\'t find on your website.',
+      explanation: TERM_EXPLANATIONS['coverage gaps'],
       highlights: coverageHighlights,
       ...resolveDashboardMeta('coverage'),
     },
@@ -532,26 +555,31 @@ function DashboardContent() {
   const signalChips = [
     {
       label: 'Telemetry',
+      explanation: TERM_EXPLANATIONS.telemetry,
       status: mapConfidenceToStatus(indexMap.get('telemetry')?.confidence),
       detail: telemetry ? `${telemetry.totals.pageViews.toLocaleString()} views` : 'No data yet',
     },
     {
       label: 'Confusion',
+      explanation: TERM_EXPLANATIONS['confusion signals'],
       status: mapConfidenceToStatus(indexMap.get('confusion')?.confidence),
       detail: confusion ? `${confusion.totals.deadEnds} dead ends` : 'No data yet',
     },
     {
       label: 'Authority',
+      explanation: TERM_EXPLANATIONS['authority signals'],
       status: mapConfidenceToStatus(indexMap.get('authority')?.confidence),
       detail: authority ? `Score ${authority.authorityScore}/100` : 'No data yet',
     },
     {
       label: 'Schema',
+      explanation: TERM_EXPLANATIONS.schema,
       status: mapConfidenceToStatus(indexMap.get('schema')?.confidence),
       detail: schema ? `Completeness ${schema.completenessScore}/100` : 'No data yet',
     },
     {
       label: 'Coverage',
+      explanation: TERM_EXPLANATIONS['coverage gaps'],
       status: mapConfidenceToStatus(indexMap.get('coverage')?.confidence),
       detail: coverage ? `${coverage.totals.contentGaps} gaps` : 'No data yet',
     },
@@ -584,32 +612,41 @@ function DashboardContent() {
     experienceHealth !== null
       ? {
           title: 'Experience health',
+          titleExplanation: TERM_EXPLANATIONS['experience health'],
           value: `${experienceHealth}/100`,
           helper: `${frictionTotal} friction signals detected`,
           trend: `${confusion?.confidence.level || 'Low'} confidence`,
         }
-      : { title: 'Experience health' },
+      : { title: 'Experience health', titleExplanation: TERM_EXPLANATIONS['experience health'] },
     authority && authority.authorityScore > 0
       ? {
           title: 'Trust lift',
+          titleExplanation: TERM_EXPLANATIONS['trust lift'],
           value: `${authority.authorityScore}/100`,
           helper: `${authority.trustSignals.length} trust signals tracked`,
+          helperExplanation: TERM_EXPLANATIONS['trust signals'],
           trend: `${authority.confidence.level} confidence`,
           scoringType: 'authority' as const,
         }
-      : { title: 'Trust lift' },
+      : { title: 'Trust lift', titleExplanation: TERM_EXPLANATIONS['trust lift'] },
     coverage
       ? {
           title: 'Coverage risk',
+          titleExplanation: TERM_EXPLANATIONS['coverage risk'],
           value: coverageRisk || 'Low',
           helper: coverage.totals.missingFunnelStages > 0 
             ? `${coverage.totals.missingFunnelStages} stages missing`
             : coverage.totals.contentGaps > 0
               ? `${coverage.totals.contentGaps} gaps detected`
               : 'Coverage complete',
+          helperExplanation: coverage.totals.missingFunnelStages > 0 
+            ? TERM_EXPLANATIONS['funnel stages']
+            : coverage.totals.contentGaps > 0
+              ? TERM_EXPLANATIONS['content gaps']
+              : undefined,
           trend: `${coverage.confidence.level} confidence`,
         }
-      : { title: 'Coverage risk' },
+      : { title: 'Coverage risk', titleExplanation: TERM_EXPLANATIONS['coverage risk'] },
   ];
 
   const doubleDownItems = telemetry?.topPages
@@ -690,12 +727,12 @@ function DashboardContent() {
       <div className="p-6 md:p-8 max-w-7xl mx-auto space-y-6 md:space-y-8">
         {/* Header Section */}
         <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 pb-4 border-b border-gray-200">
-          <div>
-            <h1 className="text-3xl md:text-4xl font-bold text-gray-900 tracking-tight">Main Dashboard</h1>
-            <p className="mt-2 text-base text-gray-600">
-              Business answers across telemetry, trust, structure, and coverage — no tech jargon.
-            </p>
-          </div>
+            <div>
+              <h1 className="text-3xl md:text-4xl font-bold text-gray-900 tracking-tight">Main Dashboard</h1>
+              <div className="mt-2 text-base text-gray-600">
+                Business answers across <HelpTooltip term="telemetry" explanation={TERM_EXPLANATIONS.telemetry} />, trust, structure, and coverage — no tech jargon.
+              </div>
+            </div>
           <div className="flex items-center gap-3">
             <span className="text-xs uppercase tracking-wide text-gray-500 font-medium">Role</span>
             <span className="px-3 py-1.5 rounded-full bg-gradient-to-r from-blue-50 to-indigo-50 text-blue-700 text-xs font-semibold border border-blue-200 shadow-sm">
@@ -709,7 +746,7 @@ function DashboardContent() {
             <div>
               <h2 className="text-xl font-bold text-gray-900">Dashboard Controls</h2>
               <p className="text-sm text-gray-600 mt-1">
-                Switch clients, pick the time window, and export exec-ready reports.
+                Switch between clients, choose your time period, and download reports.
               </p>
             </div>
             {canUseDemo ? (
@@ -758,7 +795,7 @@ function DashboardContent() {
                   </option>
                 ))}
               </select>
-              <p className="mt-2 text-xs text-gray-500">Switch between clients/tenants.</p>
+              <p className="mt-2 text-xs text-gray-500">Switch between different clients or organizations you manage.</p>
             </div>
 
             <div className="rounded-xl border border-gray-200 bg-gradient-to-br from-white to-gray-50 p-5 hover:shadow-md transition-all">
@@ -782,7 +819,7 @@ function DashboardContent() {
                   </option>
                 ))}
               </select>
-              <p className="mt-2 text-xs text-gray-500">Filter by specific site or view all.</p>
+              <p className="mt-2 text-xs text-gray-500">Choose a specific website to analyze, or view data for all websites combined.</p>
             </div>
 
             <div className="rounded-xl border border-gray-200 bg-gradient-to-br from-white to-gray-50 p-5 hover:shadow-md transition-all">
@@ -814,7 +851,7 @@ function DashboardContent() {
                   </button>
                 ))}
               </div>
-              <p className="mt-2 text-xs text-gray-500">Compare 7, 30, or custom windows.</p>
+              <p className="mt-2 text-xs text-gray-500">Choose how far back to look - last 7 days, 30 days, or a custom date range.</p>
             </div>
 
             <div className="rounded-xl border border-gray-200 bg-gradient-to-br from-white to-gray-50 p-5 hover:shadow-md transition-all">
@@ -849,7 +886,7 @@ function DashboardContent() {
                   Slides
                 </button>
               </div>
-              <p className="mt-2 text-xs text-gray-500">Export executive-ready reports.</p>
+              <p className="mt-2 text-xs text-gray-500">Download reports as PDF files to share with your team or stakeholders.</p>
             </div>
 
             <div className="rounded-xl border border-gray-200 bg-gradient-to-br from-emerald-50 to-white p-5 hover:shadow-md transition-all">
@@ -900,15 +937,6 @@ function DashboardContent() {
                     </div>
                     <p className="mt-2 text-xs text-gray-500">Tenant: {selectedTenant}</p>
                     <div className="mt-3 flex items-center gap-2">
-                      <Link
-                        href={`/dashboard/reports/${site.id}?range=${timeRange}`}
-                        className="inline-flex items-center gap-1 rounded-md bg-blue-50 px-2.5 py-1.5 text-xs font-semibold text-blue-700 hover:bg-blue-100 transition-colors"
-                      >
-                        <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                        </svg>
-                        View Report
-                      </Link>
                       <button
                         type="button"
                         onClick={() => handleExport('pdf', site.id)}
@@ -947,7 +975,7 @@ function DashboardContent() {
             <div>
               <h2 className="text-xl font-bold text-gray-900">Executive Pulse</h2>
               <p className="text-sm text-gray-600">
-                A single read on momentum, trust, and coverage health.
+                A quick overview of how your website is performing - visitor activity, trustworthiness, and content completeness.
               </p>
             </div>
           </div>
@@ -957,18 +985,18 @@ function DashboardContent() {
                 <div>
                   <h3 className="text-lg font-bold text-gray-900">Business Brief</h3>
                   <p className="mt-2 text-sm text-gray-600">
-                    A fast, executive summary of what to reinforce, repair, or retire.
+                    A quick summary of what's working well, what needs fixing, and what you should stop doing.
                   </p>
                 </div>
                 <div className="flex flex-wrap gap-2">
                   {signalChips.map((chip) => (
-                    <SignalChip key={chip.label} {...chip} />
+                    <SignalChip key={chip.label} {...chip} explanation={chip.explanation} />
                   ))}
                 </div>
               </div>
               <div className="mt-6 grid grid-cols-1 md:grid-cols-2 gap-4">
                 {pulseCards.map((card) => (
-                  <PulseCard key={card.title} {...card} />
+                  <PulseCard key={card.title} {...card} requiresSiteSelection={!selectedSiteId && !card.value} />
                 ))}
               </div>
             </div>
@@ -983,7 +1011,7 @@ function DashboardContent() {
                 <h3 className="text-lg font-bold text-gray-900">Momentum Map</h3>
               </div>
               <p className="text-sm text-gray-600 mb-6">
-                Where you are gaining confidence vs. losing momentum.
+                See which pages are performing well and gaining traction with visitors.
               </p>
               {momentumItems.length > 0 ? (
                 <div className="mt-5 space-y-4">
@@ -1006,7 +1034,10 @@ function DashboardContent() {
                   })}
                 </div>
               ) : (
-                <NoDataState helper="Momentum appears once telemetry, audits, and coverage signals connect." />
+                <NoDataState 
+                  requiresSiteSelection={!selectedSiteId}
+                  helper={selectedSiteId ? "Momentum appears once telemetry, audits, and coverage signals connect." : undefined}
+                />
               )}
             </div>
           </div>
@@ -1022,7 +1053,7 @@ function DashboardContent() {
             <div>
               <h2 className="text-xl font-bold text-gray-900">Focus Lanes</h2>
               <p className="text-sm text-gray-600">
-                Decisions grouped by what to scale, fix, or stop.
+                Action items organized by priority - what to invest more in, what needs fixing, and what to stop doing.
               </p>
             </div>
           </div>
@@ -1034,10 +1065,20 @@ function DashboardContent() {
                 { bg: 'from-rose-50 to-white', border: 'border-rose-200', dot: 'bg-rose-500' },
               ];
               const color = colors[index] || colors[0];
+              const laneExplanations: Record<string, string> = {
+                'Double down': 'Pages and features that are working well - invest more time and resources here.',
+                'Fix now': 'Issues causing visitors to leave frustrated - fix these first for the biggest impact.',
+                'Stop': 'Things that aren\'t working and wasting your time - stop doing these.',
+              };
               return (
               <div key={lane.title} className={`bg-gradient-to-br ${color.bg} border ${color.border} rounded-2xl p-6 shadow-sm hover:shadow-md transition-all`}>
                 <div className="flex items-center justify-between mb-3">
-                  <h3 className="text-base font-bold text-gray-900">{lane.title}</h3>
+                  <h3 className="text-base font-bold text-gray-900 flex items-center gap-1">
+                    {lane.title}
+                    {laneExplanations[lane.title] && (
+                      <HelpTooltip term={lane.title.toLowerCase()} explanation={laneExplanations[lane.title]} className="text-xs" />
+                    )}
+                  </h3>
                   <span className="text-xs font-semibold px-2 py-1 rounded-full bg-white text-gray-600 border border-gray-200">
                     {lane.items.length || 0}
                   </span>
@@ -1053,7 +1094,10 @@ function DashboardContent() {
                     ))}
                   </ul>
                 ) : (
-                  <NoDataState helper="Signals will populate once behavioral and audit data are available." />
+                  <NoDataState 
+                    requiresSiteSelection={!selectedSiteId}
+                    helper={selectedSiteId ? "Signals will populate once behavioral and audit data are available." : undefined}
+                  />
                 )}
               </div>
             );
@@ -1080,7 +1124,10 @@ function DashboardContent() {
                     {question.answer ? (
                       <p className="text-sm text-gray-700 leading-relaxed">{question.answer}</p>
                     ) : (
-                      <NoDataState helper="Connect telemetry, audits, and content coverage to unlock this insight." />
+                      <NoDataState 
+                        requiresSiteSelection={!selectedSiteId}
+                        helper={selectedSiteId ? "Connect telemetry, audits, and content coverage to unlock this insight." : undefined}
+                      />
                     )}
                   </div>
                 </div>
@@ -1099,7 +1146,7 @@ function DashboardContent() {
             <div>
               <h2 className="text-xl font-bold text-gray-900">Individual Dashboards</h2>
               <p className="text-sm text-gray-600">
-                Each dashboard is scoped to a business question and explains outcomes without hype.
+                Detailed views for each area of your website performance, with clear explanations of what each metric means.
               </p>
             </div>
           </div>
@@ -1108,8 +1155,13 @@ function DashboardContent() {
               <div key={card.id} className="bg-white border border-gray-200 rounded-2xl p-6 shadow-sm hover:shadow-lg transition-all group cursor-pointer">
                 <div className="flex items-start justify-between gap-3 mb-4">
                   <div className="flex-1">
-                    <h3 className="text-base font-bold text-gray-900 group-hover:text-blue-600 transition-colors">{card.name}</h3>
-                    <p className="mt-1 text-xs text-gray-600">{card.description}</p>
+                    <h3 className="text-base font-bold text-gray-900 group-hover:text-blue-600 transition-colors flex items-center gap-2">
+                      {card.name}
+                      {card.explanation && (
+                        <HelpTooltip term={card.name.toLowerCase()} explanation={card.explanation} className="text-xs" />
+                      )}
+                    </h3>
+                    <p className="mt-1 text-xs text-gray-600 leading-relaxed">{card.description}</p>
                   </div>
                   <span
                     className={`text-xs font-semibold px-2.5 py-1 rounded-full shadow-sm ${
@@ -1121,12 +1173,21 @@ function DashboardContent() {
                 </div>
                 {card.highlights.length > 0 ? (
                   <div className="grid grid-cols-2 gap-3">
-                    {card.highlights.map((metric) => (
-                      <div key={metric.label} className="rounded-xl border border-gray-200 bg-gradient-to-br from-gray-50 to-white p-3.5 hover:border-blue-300 transition-colors">
-                        <p className="text-xs font-medium text-gray-500 uppercase tracking-wide">{metric.label}</p>
-                        <p className="text-lg font-bold text-gray-900 mt-1.5">{metric.value}</p>
-                      </div>
-                    ))}
+                    {card.highlights.map((metric) => {
+                      const explanation = TERM_EXPLANATIONS[metric.label.toLowerCase()] || 
+                                         TERM_EXPLANATIONS[metric.label.toLowerCase().replace(/\s+/g, ' ')];
+                      return (
+                        <div key={metric.label} className="rounded-xl border border-gray-200 bg-gradient-to-br from-gray-50 to-white p-3.5 hover:border-blue-300 transition-colors">
+                          <div className="text-xs font-medium text-gray-500 uppercase tracking-wide flex items-center gap-1">
+                            {metric.label}
+                            {explanation && (
+                              <HelpTooltip term={metric.label.toLowerCase()} explanation={explanation} className="text-[10px]" />
+                            )}
+                          </div>
+                          <p className="text-lg font-bold text-gray-900 mt-1.5">{metric.value}</p>
+                        </div>
+                      );
+                    })}
                   </div>
                 ) : card.id === 'coverage' && coverage ? (
                   <div className="grid grid-cols-2 gap-3">
@@ -1140,7 +1201,10 @@ function DashboardContent() {
                     </div>
                   </div>
                 ) : (
-                  <NoDataState helper="No dashboard signals are available for this area yet." />
+                  <NoDataState 
+                    requiresSiteSelection={!selectedSiteId} 
+                    helper={selectedSiteId ? "No dashboard signals are available for this area yet." : undefined}
+                  />
                 )}
               </div>
             ))}
@@ -1149,75 +1213,48 @@ function DashboardContent() {
 
         <section className="space-y-4">
           <div className="flex items-center gap-3">
-            <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-slate-500 to-gray-600 flex items-center justify-center shadow-lg shadow-slate-200">
+            <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-purple-500 to-pink-600 flex items-center justify-center shadow-lg shadow-purple-200">
               <svg className="h-5 w-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 10h16M4 14h16M4 18h16" />
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
               </svg>
             </div>
             <div>
-              <h2 className="text-xl font-bold text-gray-900">Dashboard Index</h2>
+              <h2 className="text-xl font-bold text-gray-900">AI-Powered Analysis</h2>
               <p className="text-sm text-gray-600">
-                Master control panel showing activation, data connection, last update, and confidence.
+                Get an intelligent, comprehensive report analyzing all your dashboard data with actionable insights and recommendations.
               </p>
             </div>
           </div>
-          <div className="bg-white border border-gray-200 rounded-2xl overflow-hidden shadow-sm">
-            <div className="grid grid-cols-1 lg:grid-cols-5 gap-0 border-b border-gray-200 bg-gradient-to-r from-gray-50 to-white text-xs uppercase tracking-wide text-gray-600 font-semibold">
-              <div className="px-5 py-4">Dashboard</div>
-              <div className="px-5 py-4">Status</div>
-              <div className="px-5 py-4">Data connected</div>
-              <div className="px-5 py-4">Last update</div>
-              <div className="px-5 py-4">Confidence</div>
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+            <AIReportCard siteId={selectedSiteId} timeRange={timeRange} />
+            <div className="bg-gradient-to-br from-purple-50 to-pink-50 border border-purple-200 rounded-2xl p-6">
+              <h3 className="text-base font-bold text-gray-900 mb-3">What's Included</h3>
+              <ul className="space-y-2 text-sm text-gray-700">
+                <li className="flex items-start gap-2">
+                  <span className="text-purple-600 mt-0.5">✓</span>
+                  <span>Executive summary of your website performance</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="text-purple-600 mt-0.5">✓</span>
+                  <span>Key findings from visitor behavior and metrics</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="text-purple-600 mt-0.5">✓</span>
+                  <span>Identified strengths and areas for improvement</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="text-purple-600 mt-0.5">✓</span>
+                  <span>Prioritized recommendations with business impact</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="text-purple-600 mt-0.5">✓</span>
+                  <span>Actionable next steps you can implement immediately</span>
+                </li>
+              </ul>
+              <p className="mt-4 text-xs text-gray-600">
+                Reports are generated using AI analysis of all your dashboard data including telemetry, confusion signals, authority metrics, schema coverage, and more.
+              </p>
             </div>
-            {dashboardCards.map((card, index) => (
-              <div
-                key={card.id}
-                className={`grid grid-cols-1 lg:grid-cols-5 gap-0 border-b border-gray-100 text-sm hover:bg-gray-50 transition-colors ${
-                  index === dashboardCards.length - 1 ? '' : ''
-                }`}
-              >
-                <div className="px-5 py-4 text-gray-900 font-semibold flex items-center gap-2">
-                  {card.name}
-                  {card.id === 'authority' && <ScoringMethodology scoreType="authority" />}
-                  {card.id === 'confusion' && <ScoringMethodology scoreType="confusion" />}
-                  {card.id === 'schema' && <ScoringMethodology scoreType="schema" />}
-                  {card.id === 'coverage' && <ScoringMethodology scoreType="coverage" />}
-                  {card.id === 'telemetry' && <ScoringMethodology scoreType="telemetry" />}
-                </div>
-                <div className="px-5 py-4">
-                  <span
-                    className={`text-xs font-semibold px-2.5 py-1 rounded-full shadow-sm ${
-                      statusStyles[card.status] || statusStyles.Inactive
-                    }`}
-                  >
-                    {card.status}
-                  </span>
-                </div>
-                <div className="px-5 py-4 text-gray-600">
-                  <span className={`inline-flex items-center gap-1.5 ${card.dataConnected ? 'text-emerald-600' : 'text-gray-400'}`}>
-                    {card.dataConnected ? (
-                      <>
-                        <svg className="h-4 w-4" fill="currentColor" viewBox="0 0 20 20">
-                          <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-                        </svg>
-                        Connected
-                      </>
-                    ) : (
-                      <>
-                        <svg className="h-4 w-4" fill="currentColor" viewBox="0 0 20 20">
-                          <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
-                        </svg>
-                        Not connected
-                      </>
-                    )}
-                  </span>
-                </div>
-                <div className="px-5 py-4 text-gray-600 font-medium">{card.lastUpdate}</div>
-                <div className={`px-5 py-4 font-semibold ${confidenceStyles[card.confidence] || 'text-gray-500'}`}>
-                  {card.confidence}
-                </div>
-              </div>
-            ))}
           </div>
         </section>
       </div>
@@ -1237,10 +1274,12 @@ function SignalChip({
   label,
   status,
   detail,
+  explanation,
 }: {
   label: string;
   status: 'Strong' | 'Watch' | 'Idle' | 'Weak';
   detail: string;
+  explanation?: string;
 }) {
   const styles: Record<string, string> = {
     Strong: 'bg-emerald-100 text-emerald-700 border-emerald-200',
@@ -1250,8 +1289,11 @@ function SignalChip({
   };
 
   return (
-    <div className={`rounded-full px-3 py-1.5 text-xs font-semibold border ${styles[status]} shadow-sm hover:shadow-md transition-shadow`}>
+    <div className={`rounded-full px-3 py-1.5 text-xs font-semibold border ${styles[status]} shadow-sm hover:shadow-md transition-shadow flex items-center gap-1`}>
       <span className="font-bold">{label}:</span> {detail}
+      {explanation && (
+        <HelpTooltip term={label.toLowerCase()} explanation={explanation} className="text-[10px]" />
+      )}
     </div>
   );
 }
@@ -1262,12 +1304,16 @@ function PulseCard({
   helper,
   trend,
   scoringType,
+  titleExplanation,
+  helperExplanation,
 }: {
   title: string;
   value?: string;
   helper?: string;
   trend?: string;
   scoringType?: 'authority' | 'confusion' | 'schema' | 'coverage' | 'telemetry';
+  titleExplanation?: string;
+  helperExplanation?: string;
 }) {
   const isPositive = trend?.includes('+') || trend?.toLowerCase().includes('stable');
   const trendColor = isPositive ? 'text-emerald-600' : trend?.toLowerCase().includes('needs') ? 'text-amber-600' : 'text-gray-600';
@@ -1275,7 +1321,12 @@ function PulseCard({
   return (
     <div className="rounded-xl border border-gray-200 bg-gradient-to-br from-white to-gray-50 p-5 hover:shadow-md transition-all">
       <div className="flex items-center justify-between mb-3">
-        <p className="text-xs uppercase tracking-wide text-gray-600 font-semibold">{title}</p>
+        <div className="text-xs uppercase tracking-wide text-gray-600 font-semibold flex items-center gap-1">
+          {title}
+          {titleExplanation && (
+            <HelpTooltip term={title.toLowerCase()} explanation={titleExplanation} className="text-[10px]" />
+          )}
+        </div>
         {scoringType && <ScoringMethodology scoreType={scoringType} />}
       </div>
       {value ? (
@@ -1291,10 +1342,20 @@ function PulseCard({
               <p className={`text-xs font-semibold ${trendColor}`}>{trend}</p>
             </div>
           ) : null}
-          {helper ? <p className="text-xs text-gray-600 leading-relaxed">{helper}</p> : null}
+          {helper ? (
+            <div className="text-xs text-gray-600 leading-relaxed flex items-center gap-1">
+              {helper}
+              {helperExplanation && (
+                <HelpTooltip term={helper.toLowerCase().split(' ')[0]} explanation={helperExplanation} className="text-[10px]" />
+              )}
+            </div>
+          ) : null}
         </div>
       ) : (
-        <NoDataState helper="Signals will appear once data is connected." />
+        <NoDataState 
+          requiresSiteSelection={requiresSiteSelection}
+          helper={requiresSiteSelection ? undefined : "Signals will appear once data is connected."}
+        />
       )}
     </div>
   );
