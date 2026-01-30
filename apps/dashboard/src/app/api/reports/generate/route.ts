@@ -41,11 +41,21 @@ export async function POST(request: NextRequest) {
     const reportTypes = types || ['pdf', 'email', 'scorecard'];
 
     // Get audit
-    const [audit] = await db
-      .select()
-      .from(audits)
-      .where(eq(audits.id, auditId))
-      .limit(1);
+    let audit: typeof audits.$inferSelect | undefined;
+    try {
+      [audit] = await db
+        .select()
+        .from(audits)
+        .where(eq(audits.id, auditId))
+        .limit(1);
+    } catch (auditError) {
+      // Handle gracefully if audits table doesn't exist (migration not run yet)
+      console.warn('Audits table query failed:', auditError);
+      return NextResponse.json(
+        { error: 'Audits table not available. Please run database migrations.' },
+        { status: 503 }
+      );
+    }
 
     if (!audit) {
       return NextResponse.json(

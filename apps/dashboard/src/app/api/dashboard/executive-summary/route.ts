@@ -116,15 +116,30 @@ export async function GET(request: NextRequest) {
       )
       .orderBy(desc(authoritySignals.createdAt));
 
-    const latestAudits = await db
-      .select({
-        siteId: audits.siteId,
-        results: audits.results,
-        createdAt: audits.createdAt,
-      })
-      .from(audits)
-      .where(inArray(audits.siteId, siteIds))
-      .orderBy(desc(audits.createdAt));
+    // #region agent log
+    fetch('http://127.0.0.1:7251/ingest/f2bef142-91a5-4d7a-be78-4c2383eb5638',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'api/dashboard/executive-summary/route.ts:119',message:'Before audits query',data:{siteIdsCount:siteIds.length},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A'})}).catch(()=>{});
+    // #endregion
+    let latestAudits: Array<{ siteId: string; results: unknown; createdAt: Date }> = [];
+    try {
+      latestAudits = await db
+        .select({
+          siteId: audits.siteId,
+          results: audits.results,
+          createdAt: audits.createdAt,
+        })
+        .from(audits)
+        .where(inArray(audits.siteId, siteIds))
+        .orderBy(desc(audits.createdAt));
+      // #region agent log
+      fetch('http://127.0.0.1:7251/ingest/f2bef142-91a5-4d7a-be78-4c2383eb5638',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'api/dashboard/executive-summary/route.ts:127',message:'Audits query succeeded',data:{auditsCount:latestAudits.length},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A'})}).catch(()=>{});
+      // #endregion
+    } catch (auditError) {
+      // #region agent log
+      fetch('http://127.0.0.1:7251/ingest/f2bef142-91a5-4d7a-be78-4c2383eb5638',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'api/dashboard/executive-summary/route.ts:131',message:'Audits query failed',data:{error:auditError instanceof Error ? auditError.message : String(auditError)},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'B'})}).catch(()=>{});
+      // #endregion
+      // Handle gracefully if audits table doesn't exist (migration not run yet)
+      console.warn('Audits table query failed, continuing without audit data:', auditError);
+    }
 
     const auditBySite = new Map<string, Record<string, unknown>>();
     for (const audit of latestAudits) {

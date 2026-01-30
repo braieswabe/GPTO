@@ -172,18 +172,24 @@ export async function GET(request: NextRequest) {
     });
 
     // Get recent audits (last 10)
-    const recentAudits = await db
-      .select({
-        id: audits.id,
-        siteId: audits.siteId,
-        timestamp: audits.createdAt,
-        type: audits.type,
-        status: audits.status,
-      })
-      .from(audits)
-      .where(inArray(audits.siteId, siteIds))
-      .orderBy(desc(audits.createdAt))
-      .limit(10);
+    let recentAudits: Array<{ id: string; siteId: string; timestamp: Date; type: string; status: string }> = [];
+    try {
+      recentAudits = await db
+        .select({
+          id: audits.id,
+          siteId: audits.siteId,
+          timestamp: audits.createdAt,
+          type: audits.type,
+          status: audits.status,
+        })
+        .from(audits)
+        .where(inArray(audits.siteId, siteIds))
+        .orderBy(desc(audits.createdAt))
+        .limit(10);
+    } catch (auditError) {
+      // Handle gracefully if audits table doesn't exist (migration not run yet)
+      console.warn('Audits table query failed, continuing without audit data:', auditError);
+    }
 
     // Get site domains for audits
     const auditSiteIds = [...new Set(recentAudits.map(a => a.siteId))];

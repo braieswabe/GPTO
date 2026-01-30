@@ -114,7 +114,7 @@ interface DashboardData {
   executiveSummary: ExecutiveSummary | null;
 }
 
-async function fetchDashboardData(range: '7d' | '30d' | 'custom'): Promise<DashboardData> {
+async function fetchDashboardData(range: '7d' | '30d' | 'custom', siteId: string | null = null): Promise<DashboardData> {
   try {
     const token = localStorage.getItem('token') || '';
     const headers = {
@@ -128,6 +128,7 @@ async function fetchDashboardData(range: '7d' | '30d' | 'custom'): Promise<Dashb
     };
 
     const rangeParam = `range=${range}`;
+    const siteParam = siteId ? `&siteId=${encodeURIComponent(siteId)}` : '';
 
     const [
       sitesData,
@@ -140,13 +141,13 @@ async function fetchDashboardData(range: '7d' | '30d' | 'custom'): Promise<Dashb
       executiveData,
     ] = await Promise.all([
       fetchJson<{ data: DashboardSite[] }>('/api/sites'),
-      fetchJson<TelemetrySummary>(`/api/dashboard/telemetry?${rangeParam}`),
-      fetchJson<ConfusionSummary>(`/api/dashboard/confusion?${rangeParam}`),
-      fetchJson<AuthoritySummary>(`/api/dashboard/authority?${rangeParam}`),
-      fetchJson<SchemaSummary>(`/api/dashboard/schema?${rangeParam}`),
-      fetchJson<CoverageSummary>(`/api/dashboard/coverage?${rangeParam}`),
-      fetchJson<{ dashboards: DashboardIndexEntry[] }>(`/api/dashboard/index?${rangeParam}`),
-      fetchJson<ExecutiveSummary>(`/api/dashboard/executive-summary?${rangeParam}`),
+      fetchJson<TelemetrySummary>(`/api/dashboard/telemetry?${rangeParam}${siteParam}`),
+      fetchJson<ConfusionSummary>(`/api/dashboard/confusion?${rangeParam}${siteParam}`),
+      fetchJson<AuthoritySummary>(`/api/dashboard/authority?${rangeParam}${siteParam}`),
+      fetchJson<SchemaSummary>(`/api/dashboard/schema?${rangeParam}${siteParam}`),
+      fetchJson<CoverageSummary>(`/api/dashboard/coverage?${rangeParam}${siteParam}`),
+      fetchJson<{ dashboards: DashboardIndexEntry[] }>(`/api/dashboard/index?${rangeParam}${siteParam}`),
+      fetchJson<ExecutiveSummary>(`/api/dashboard/executive-summary?${rangeParam}${siteParam}`),
     ]);
 
     const sitesList: DashboardSite[] = sitesData?.data || [];
@@ -198,11 +199,12 @@ function DashboardContent() {
   const [timeRange, setTimeRange] = useState<'7d' | '30d' | 'custom'>('30d');
   const [demoMode, setDemoMode] = useState(false);
   const [selectedTenant, setSelectedTenant] = useState('Primary');
+  const [selectedSiteId, setSelectedSiteId] = useState<string | null>(null);
   const canUseDemo = currentUserRole === 'admin';
 
   const { data, isLoading } = useQuery({
-    queryKey: ['dashboard', timeRange],
-    queryFn: () => fetchDashboardData(timeRange),
+    queryKey: ['dashboard', timeRange, selectedSiteId],
+    queryFn: () => fetchDashboardData(timeRange, selectedSiteId),
     refetchInterval: 30000,
   });
 
@@ -457,7 +459,10 @@ function DashboardContent() {
       ]
     : [];
 
-  const coverageHighlights = coverage && coverage.totals.contentGaps > 0
+  // #region agent log
+  fetch('http://127.0.0.1:7251/ingest/f2bef142-91a5-4d7a-be78-4c2383eb5638',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'dashboard/page.tsx:462',message:'Building coverage highlights',data:{hasCoverage:!!coverage,contentGaps:coverage?.totals.contentGaps,missingStages:coverage?.totals.missingFunnelStages,missingIntents:coverage?.totals.missingIntents,priorityFixes:coverage?.totals.priorityFixes},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'E'})}).catch(()=>{});
+  // #endregion
+  const coverageHighlights = coverage
     ? [
         { label: 'Content gaps', value: coverage.totals.contentGaps.toString() },
         { label: 'Missing funnel stages', value: coverage.totals.missingFunnelStages.toString() },
@@ -556,6 +561,9 @@ function DashboardContent() {
     ? confusion.totals.repeatedSearches + confusion.totals.deadEnds + confusion.totals.dropOffs
     : 0;
   const experienceHealth = confusion ? Math.max(0, 100 - Math.min(100, frictionTotal * 2)) : null;
+  // #region agent log
+  fetch('http://127.0.0.1:7251/ingest/f2bef142-91a5-4d7a-be78-4c2383eb5638',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'dashboard/page.tsx:561',message:'Calculating coverage risk',data:{hasCoverage:!!coverage,priorityFixes:coverage?.totals.priorityFixes,missingStages:coverage?.totals.missingFunnelStages},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'D'})}).catch(()=>{});
+  // #endregion
   const coverageRisk = coverage
     ? coverage.totals.priorityFixes > 3
       ? 'High'
@@ -590,12 +598,16 @@ function DashboardContent() {
           scoringType: 'authority' as const,
         }
       : { title: 'Trust lift' },
-    coverageRisk
+    coverage
       ? {
           title: 'Coverage risk',
-          value: coverageRisk,
-          helper: `${coverage?.totals.missingFunnelStages || 0} stages missing`,
-          trend: `${coverage?.confidence.level || 'Low'} confidence`,
+          value: coverageRisk || 'Low',
+          helper: coverage.totals.missingFunnelStages > 0 
+            ? `${coverage.totals.missingFunnelStages} stages missing`
+            : coverage.totals.contentGaps > 0
+              ? `${coverage.totals.contentGaps} gaps detected`
+              : 'Coverage complete',
+          trend: `${coverage.confidence.level} confidence`,
         }
       : { title: 'Coverage risk' },
   ];
@@ -634,10 +646,11 @@ function DashboardContent() {
     
     try {
       const token = localStorage.getItem('token') || '';
+      const exportSiteId = siteId || selectedSiteId || undefined;
       const params = new URLSearchParams({
         format,
         range: timeRange,
-        ...(siteId && { siteId }),
+        ...(exportSiteId && { siteId: exportSiteId }),
       });
       
       const response = await fetch(`/api/dashboard/export?${params}`, {
@@ -724,7 +737,7 @@ function DashboardContent() {
             ) : null}
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-5 gap-4">
             <div className="rounded-xl border border-gray-200 bg-gradient-to-br from-white to-gray-50 p-5 hover:shadow-md transition-all">
               <div className="flex items-center gap-2 mb-3">
                 <div className="h-8 w-8 rounded-lg bg-blue-100 flex items-center justify-center">
@@ -746,6 +759,30 @@ function DashboardContent() {
                 ))}
               </select>
               <p className="mt-2 text-xs text-gray-500">Switch between clients/tenants.</p>
+            </div>
+
+            <div className="rounded-xl border border-gray-200 bg-gradient-to-br from-white to-gray-50 p-5 hover:shadow-md transition-all">
+              <div className="flex items-center gap-2 mb-3">
+                <div className="h-8 w-8 rounded-lg bg-indigo-100 flex items-center justify-center">
+                  <svg className="h-4 w-4 text-indigo-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9" />
+                  </svg>
+                </div>
+                <p className="text-xs uppercase tracking-wide text-gray-600 font-semibold">Site</p>
+              </div>
+              <select
+                className="w-full rounded-lg border border-gray-300 px-3 py-2.5 text-sm font-medium bg-white hover:border-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+                value={selectedSiteId || ''}
+                onChange={(event) => setSelectedSiteId(event.target.value || null)}
+              >
+                <option value="">All Sites</option>
+                {sitesList.map((site) => (
+                  <option key={site.id} value={site.id}>
+                    {site.domain}
+                  </option>
+                ))}
+              </select>
+              <p className="mt-2 text-xs text-gray-500">Filter by specific site or view all.</p>
             </div>
 
             <div className="rounded-xl border border-gray-200 bg-gradient-to-br from-white to-gray-50 p-5 hover:shadow-md transition-all">
@@ -1090,6 +1127,17 @@ function DashboardContent() {
                         <p className="text-lg font-bold text-gray-900 mt-1.5">{metric.value}</p>
                       </div>
                     ))}
+                  </div>
+                ) : card.id === 'coverage' && coverage ? (
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="rounded-xl border border-emerald-200 bg-gradient-to-br from-emerald-50 to-white p-3.5">
+                      <p className="text-xs font-medium text-emerald-700 uppercase tracking-wide">Status</p>
+                      <p className="text-lg font-bold text-emerald-900 mt-1.5">Complete</p>
+                    </div>
+                    <div className="rounded-xl border border-gray-200 bg-gradient-to-br from-gray-50 to-white p-3.5">
+                      <p className="text-xs font-medium text-gray-500 uppercase tracking-wide">Confidence</p>
+                      <p className="text-lg font-bold text-gray-900 mt-1.5">{coverage.confidence.level}</p>
+                    </div>
                   </div>
                 ) : (
                   <NoDataState helper="No dashboard signals are available for this area yet." />

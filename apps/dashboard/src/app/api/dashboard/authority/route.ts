@@ -65,15 +65,41 @@ export async function GET(request: NextRequest) {
       ? schemaCompletenessValues.reduce((a, b) => a + b, 0) / schemaCompletenessValues.length
       : 0;
 
-    const latestAudits = await db
-      .select({
-        siteId: audits.siteId,
-        results: audits.results,
-        createdAt: audits.createdAt,
-      })
-      .from(audits)
-      .where(inArray(audits.siteId, siteIds))
-      .orderBy(desc(audits.createdAt));
+    // #region agent log
+    fetch('http://127.0.0.1:7251/ingest/f2bef142-91a5-4d7a-be78-4c2383eb5638',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'api/dashboard/authority/route.ts:68',message:'Before audits query',data:{siteIdsCount:siteIds.length},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A'})}).catch(()=>{});
+    // #endregion
+    let latestAudits: Array<{ siteId: string; results: unknown; createdAt: Date }> = [];
+    try {
+      latestAudits = await db
+        .select({
+          siteId: audits.siteId,
+          results: audits.results,
+          createdAt: audits.createdAt,
+        })
+        .from(audits)
+        .where(inArray(audits.siteId, siteIds))
+        .orderBy(desc(audits.createdAt));
+      // #region agent log
+      fetch('http://127.0.0.1:7251/ingest/f2bef142-91a5-4d7a-be78-4c2383eb5638',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'api/dashboard/authority/route.ts:76',message:'Audits query succeeded',data:{auditsCount:latestAudits.length},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A'})}).catch(()=>{});
+      // #endregion
+    } catch (auditError: unknown) {
+      // #region agent log
+      const errorMessage = auditError instanceof Error ? auditError.message : String(auditError);
+      const errorCode = (auditError as { code?: string })?.code;
+      const isTableMissing = errorMessage.includes('does not exist') || 
+                             errorMessage.includes('relation') ||
+                             errorCode === '42P01';
+      fetch('http://127.0.0.1:7251/ingest/f2bef142-91a5-4d7a-be78-4c2383eb5638',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'api/dashboard/authority/route.ts:85',message:'Audits query failed',data:{error:errorMessage,code:errorCode,isTableMissing},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'B'})}).catch(()=>{});
+      // #endregion
+      // Handle gracefully if audits table doesn't exist (migration not run yet)
+      // Error code 42P01 = "relation does not exist" in PostgreSQL
+      if (isTableMissing) {
+        console.warn('Audits table does not exist (migration may not have run), continuing without audit data');
+      } else {
+        console.error('Audits table query failed with unexpected error:', auditError);
+      }
+      // Continue with empty audits array - the rest of the code handles this gracefully
+    }
 
     const auditBySite = new Map<string, Record<string, unknown>>();
     for (const audit of latestAudits) {
@@ -102,6 +128,19 @@ export async function GET(request: NextRequest) {
       }
       if (siteSignals.length > 0) {
         trustSignalsBySite.set(auditSiteId, siteSignals);
+      }
+    }
+
+    // If no trust signals from audits but we have authority score from telemetry, derive signals from telemetry
+    if (trustSignals.length === 0 && authorityScore > 0) {
+      // #region agent log
+      fetch('http://127.0.0.1:7251/ingest/f2bef142-91a5-4d7a-be78-4c2383eb5638',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'api/dashboard/authority/route.ts:122',message:'Deriving trust signals from telemetry',data:{authorityScore,schemaCompletenessAvg},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'C'})}).catch(()=>{});
+      // #endregion
+      if (authorityScore > 0) {
+        trustSignals.push({ label: 'Authority score', value: authorityScore });
+      }
+      if (schemaCompletenessAvg > 0) {
+        trustSignals.push({ label: 'Schema completeness', value: Math.round(schemaCompletenessAvg * 100) });
       }
     }
 
