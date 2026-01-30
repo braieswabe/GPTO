@@ -1306,6 +1306,7 @@ function PulseCard({
   scoringType,
   titleExplanation,
   helperExplanation,
+  requiresSiteSelection,
 }: {
   title: string;
   value?: string;
@@ -1314,6 +1315,7 @@ function PulseCard({
   scoringType?: 'authority' | 'confusion' | 'schema' | 'coverage' | 'telemetry';
   titleExplanation?: string;
   helperExplanation?: string;
+  requiresSiteSelection?: boolean;
 }) {
   const isPositive = trend?.includes('+') || trend?.toLowerCase().includes('stable');
   const trendColor = isPositive ? 'text-emerald-600' : trend?.toLowerCase().includes('needs') ? 'text-amber-600' : 'text-gray-600';
