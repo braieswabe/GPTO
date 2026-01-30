@@ -21,9 +21,8 @@ export function HelpTooltip({ term, explanation, className = '' }: HelpTooltipPr
         className="inline-flex items-center text-blue-600 hover:text-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-1 rounded"
         aria-label={`What is ${term}?`}
       >
-        <span className="underline decoration-dotted">{term}</span>
         <svg
-          className="ml-1 h-3.5 w-3.5 text-blue-500"
+          className="h-3.5 w-3.5 text-blue-500"
           fill="none"
           viewBox="0 0 24 24"
           stroke="currentColor"
