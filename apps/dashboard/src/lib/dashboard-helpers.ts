@@ -40,11 +40,19 @@ export function parseDateRange(searchParams: URLSearchParams): DateRange {
 
 export async function requireAuth(request: NextRequest): Promise<void> {
   const authHeader = request.headers.get('authorization');
+  const cronSecret = process.env.CRON_SECRET;
+  if (cronSecret && authHeader === `Bearer ${cronSecret}`) {
+    return;
+  }
   const token = extractToken(authHeader ?? undefined);
   if (!token) {
     throw new AuthenticationError();
   }
-  verifyToken(token);
+  try {
+    verifyToken(token);
+  } catch {
+    throw new AuthenticationError();
+  }
 }
 
 export async function getSiteIds(request: NextRequest, siteId?: string | null) {

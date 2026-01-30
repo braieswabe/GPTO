@@ -123,6 +123,7 @@ interface SiteDetail {
     timestamp: string;
     metrics: Record<string, number>;
   }>;
+  activeVersion: string | null;
 }
 
 async function fetchSiteDetail(id: string): Promise<SiteDetail> {
@@ -161,6 +162,9 @@ function SiteDetailPageContent() {
   const { data, isLoading } = useQuery({
     queryKey: ['site', siteId],
     queryFn: () => fetchSiteDetail(siteId),
+    refetchInterval: 300000, // Refresh every 5 minutes (300000ms = 5 minutes)
+    refetchOnWindowFocus: true, // Refetch when window regains focus to get latest data
+    staleTime: 4 * 60 * 1000, // Consider data stale after 4 minutes (so it refetches before the 5min interval)
   });
 
   const rollbackMutation = useMutation({
@@ -298,7 +302,7 @@ function SiteDetailPageContent() {
       </div>
 
       <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
-        <UpdateHistory siteId={siteId} />
+        <UpdateHistory siteId={siteId} activeVersion={data.activeVersion} />
       </div>
 
       {rollbackMutation.isError && (

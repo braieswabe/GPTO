@@ -1,4 +1,4 @@
-import { db, configVersions, updateHistory } from '@gpto/database';
+import { db, configVersions, updateHistory, rollbackPoints } from '@gpto/database';
 import { eq, and } from 'drizzle-orm';
 
 /**
@@ -60,7 +60,7 @@ export async function rollbackToVersion(
     });
 
     // Record rollback in update history
-    await db.insert(updateHistory).values({
+    const [update] = await db.insert(updateHistory).values({
       siteId,
       fromVersion: currentConfig.version,
       toVersion: newVersion,
@@ -68,7 +68,16 @@ export async function rollbackToVersion(
       signature: 'rollback',
       appliedAt: new Date(),
       userId,
-    });
+    }).returning();
+
+    if (update) {
+      await db.insert(rollbackPoints).values({
+        updateId: update.id,
+        siteId,
+        version: currentConfig.version,
+        configSnapshot: currentConfig.configJson,
+      });
+    }
   } else {
     // Reactivate target version
     await db

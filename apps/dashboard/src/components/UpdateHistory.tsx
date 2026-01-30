@@ -23,6 +23,7 @@ interface Update {
 
 interface UpdateHistoryProps {
   siteId: string;
+  activeVersion: string | null;
 }
 
 async function fetchUpdates(siteId: string): Promise<Update[]> {
@@ -54,9 +55,54 @@ async function approveUpdate(approvalId: string, status: 'approved' | 'rejected'
   return response.json();
 }
 
-export function UpdateHistory({ siteId }: UpdateHistoryProps) {
+async function fetchConfigVersion(siteId: string, version: string) {
+  // URL encode the version to handle special characters like dots
+  const encodedVersion = encodeURIComponent(version);
+  const response = await fetch(`/api/sites/${siteId}/versions/${encodedVersion}`, {
+    headers: {
+      Authorization: `Bearer ${localStorage.getItem('token') || ''}`,
+    },
+  });
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(error.error || 'Failed to fetch config version');
+  }
+  return response.json();
+}
+
+async function rollbackToVersion(siteId: string, targetVersion: string) {
+  const response = await fetch(`/api/sites/${siteId}/rollback`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${localStorage.getItem('token') || ''}`,
+    },
+    body: JSON.stringify({ targetVersion }),
+  });
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(error.error || 'Failed to rollback');
+  }
+  return response.json();
+}
+
+export function UpdateHistory({ siteId, activeVersion }: UpdateHistoryProps) {
   const queryClient = useQueryClient();
   const [processingId, setProcessingId] = useState<string | null>(null);
+  const [rollbackTargetId, setRollbackTargetId] = useState<string | null>(null);
+  const [comparisonModal, setComparisonModal] = useState<{
+    show: boolean;
+    update: Update | null;
+    pastConfig: unknown | null;
+    currentConfig: unknown | null;
+    loading: boolean;
+  }>({
+    show: false,
+    update: null,
+    pastConfig: null,
+    currentConfig: null,
+    loading: false,
+  });
 
   const { data: updates, isLoading } = useQuery({
     queryKey: ['updates', siteId],
@@ -76,6 +122,18 @@ export function UpdateHistory({ siteId }: UpdateHistoryProps) {
     },
   });
 
+  const rollbackMutation = useMutation({
+    mutationFn: (targetVersion: string) => rollbackToVersion(siteId, targetVersion),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['updates', siteId] });
+      queryClient.invalidateQueries({ queryKey: ['site', siteId] });
+      setRollbackTargetId(null);
+    },
+    onError: () => {
+      setRollbackTargetId(null);
+    },
+  });
+
   const handleApprove = (approvalId: string) => {
     setProcessingId(approvalId);
     approveMutation.mutate({ approvalId, status: 'approved' });
@@ -85,6 +143,77 @@ export function UpdateHistory({ siteId }: UpdateHistoryProps) {
     const reason = prompt('Reason for rejection (optional):');
     setProcessingId(approvalId);
     approveMutation.mutate({ approvalId, status: 'rejected', reason: reason || undefined });
+  };
+
+  const handleRollbackClick = async (update: Update) => {
+    // Fetch both configs for comparison
+    setComparisonModal({
+      show: true,
+      update,
+      pastConfig: null,
+      currentConfig: null,
+      loading: true,
+    });
+
+    try {
+      // Fetch past config (fromVersion)
+      const pastConfigData = await fetchConfigVersion(siteId, update.fromVersion);
+      
+      // Fetch current config (active version)
+      const siteData = await queryClient.fetchQuery({
+        queryKey: ['site', siteId],
+        queryFn: async () => {
+          const response = await fetch(`/api/sites/${siteId}`, {
+            headers: {
+              Authorization: `Bearer ${localStorage.getItem('token') || ''}`,
+            },
+          });
+          if (!response.ok) throw new Error('Failed to fetch site');
+          return response.json();
+        },
+      });
+
+      setComparisonModal({
+        show: true,
+        update,
+        pastConfig: pastConfigData.configJson,
+        currentConfig: siteData.config,
+        loading: false,
+      });
+    } catch (error) {
+      console.error('Error fetching configs:', error);
+      setComparisonModal({
+        show: true,
+        update,
+        pastConfig: null,
+        currentConfig: null,
+        loading: false,
+      });
+    }
+  };
+
+  const handleConfirmRollback = () => {
+    if (comparisonModal.update) {
+      setRollbackTargetId(comparisonModal.update.id);
+      rollbackMutation.mutate(comparisonModal.update.fromVersion);
+      setComparisonModal({
+        show: false,
+        update: null,
+        pastConfig: null,
+        currentConfig: null,
+        loading: false,
+      });
+    }
+  };
+
+  const handleCloseModal = () => {
+    setComparisonModal({
+      show: false,
+      update: null,
+      pastConfig: null,
+      currentConfig: null,
+      loading: false,
+    });
   };
 
   if (isLoading) {
@@ -143,10 +272,24 @@ export function UpdateHistory({ siteId }: UpdateHistoryProps) {
                   <span className="px-3 py-1 text-xs font-medium rounded-full bg-red-100 text-red-800">
                     Rolled Back
                   </span>
-                ) : update.appliedAt ? (
-                  <span className="px-3 py-1 text-xs font-medium rounded-full bg-green-100 text-green-800">
-                    Applied
+                ) : update.appliedAt && update.toVersion === activeVersion ? (
+                  <span className="px-3 py-1 text-xs font-medium rounded-full bg-blue-100 text-blue-800">
+                    Active
                   </span>
+                ) : update.appliedAt ? (
+                  <div className="flex items-center gap-2">
+                    <span className="px-3 py-1 text-xs font-medium rounded-full bg-green-100 text-green-800">
+                      Applied
+                    </span>
+                    <button
+                      onClick={() => handleRollbackClick(update)}
+                      disabled={rollbackTargetId === update.id || rollbackMutation.isPending}
+                      className="px-3 py-1 text-xs font-medium rounded-full bg-orange-600 text-white hover:bg-orange-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                      title={`Rollback to version ${update.fromVersion}`}
+                    >
+                      Rollback
+                    </button>
+                  </div>
                 ) : update.approval?.status === 'rejected' ? (
                   <span className="px-3 py-1 text-xs font-medium rounded-full bg-red-100 text-red-800">
                     Rejected
@@ -184,9 +327,94 @@ export function UpdateHistory({ siteId }: UpdateHistoryProps) {
                 Rejection reason: {update.approval.rejectedReason}
               </div>
             )}
+            {rollbackMutation.isError && rollbackTargetId === update.id && (
+              <div className="mt-2 p-2 bg-red-50 border border-red-200 rounded text-xs text-red-700">
+                Rollback failed: {rollbackMutation.error instanceof Error ? rollbackMutation.error.message : 'Unknown error'}
+              </div>
+            )}
           </div>
         ))}
       </div>
+
+      {/* Comparison Modal */}
+      {comparisonModal.show && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg shadow-xl max-w-6xl w-full max-h-[90vh] flex flex-col">
+            <div className="p-6 border-b border-gray-200">
+              <div className="flex justify-between items-start">
+                <div>
+                  <h3 className="text-lg font-semibold text-gray-900">Rollback Comparison</h3>
+                  <p className="text-sm text-gray-500 mt-1">
+                    Compare past configuration (version {comparisonModal.update?.fromVersion}) with current configuration
+                  </p>
+                </div>
+                <button
+                  onClick={handleCloseModal}
+                  className="text-gray-400 hover:text-gray-600 transition-colors"
+                >
+                  <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
+            </div>
+            
+            <div className="flex-1 overflow-auto p-6">
+              {comparisonModal.loading ? (
+                <div className="flex items-center justify-center h-64">
+                  <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+                </div>
+              ) : comparisonModal.pastConfig && comparisonModal.currentConfig ? (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  {/* Past Config */}
+                  <div>
+                    <h4 className="text-sm font-semibold text-gray-900 mb-2">
+                      Past Configuration (v{comparisonModal.update?.fromVersion})
+                    </h4>
+                    <div className="bg-gray-50 p-4 rounded-lg border border-gray-200 overflow-auto max-h-[60vh]">
+                      <pre className="text-xs font-mono text-gray-800 whitespace-pre-wrap">
+                        {JSON.stringify(comparisonModal.pastConfig, null, 2)}
+                      </pre>
+                    </div>
+                  </div>
+                  
+                  {/* Current Config */}
+                  <div>
+                    <h4 className="text-sm font-semibold text-gray-900 mb-2">
+                      Current Configuration (Active)
+                    </h4>
+                    <div className="bg-gray-50 p-4 rounded-lg border border-gray-200 overflow-auto max-h-[60vh]">
+                      <pre className="text-xs font-mono text-gray-800 whitespace-pre-wrap">
+                        {JSON.stringify(comparisonModal.currentConfig, null, 2)}
+                      </pre>
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <div className="text-center py-8">
+                  <p className="text-gray-500">Failed to load configurations</p>
+                </div>
+              )}
+            </div>
+            
+            <div className="p-6 border-t border-gray-200 flex justify-end gap-3">
+              <button
+                onClick={handleCloseModal}
+                className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleConfirmRollback}
+                disabled={!comparisonModal.pastConfig || rollbackMutation.isPending}
+                className="px-4 py-2 text-sm font-medium text-white bg-orange-600 rounded-lg hover:bg-orange-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              >
+                {rollbackMutation.isPending ? 'Rolling back...' : 'Confirm Rollback'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

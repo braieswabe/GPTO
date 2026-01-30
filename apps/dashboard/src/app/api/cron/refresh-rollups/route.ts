@@ -49,7 +49,11 @@ export async function POST(request: NextRequest) {
         
         // Import the refresh logic from the dashboard endpoints
         const origin = new URL(request.url).origin;
-        const headers = cronSecret ? { Authorization: `Bearer ${cronSecret}` } : {};
+        const headers = cronSecret
+          ? { Authorization: `Bearer ${cronSecret}` }
+          : authHeader
+            ? { Authorization: authHeader }
+            : {};
         
         // Refresh telemetry rollups
         await fetch(

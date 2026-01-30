@@ -234,14 +234,14 @@ export async function GET(request: NextRequest) {
     // Only generate if we have enough data (at least 5 events) and signals don't exist
     const shouldAutoGenerate = events.length >= 5 && siteId && siteIds.length === 1;
     
-    if (shouldAutoGenerate || refresh) {
+    if ((shouldAutoGenerate || refresh) && siteId) {
       // Check if signals already exist for this window
       const existingSignals = await db
         .select({ id: confusionSignals.id })
         .from(confusionSignals)
         .where(
           and(
-            eq(confusionSignals.siteId, siteId!),
+            eq(confusionSignals.siteId, siteId),
             gte(confusionSignals.windowStart, start),
             lte(confusionSignals.windowEnd, end)
           )
@@ -251,7 +251,7 @@ export async function GET(request: NextRequest) {
       // Only generate if signals don't exist or refresh is explicitly requested
       if (existingSignals.length === 0 || refresh) {
         await db.insert(confusionSignals).values({
-          siteId: siteId!,
+          siteId,
           windowStart: start,
           windowEnd: end,
           type: 'repeated_search',
@@ -259,7 +259,7 @@ export async function GET(request: NextRequest) {
           evidence: repeatedSearches.slice(0, 5),
         });
         await db.insert(confusionSignals).values({
-          siteId: siteId!,
+          siteId,
           windowStart: start,
           windowEnd: end,
           type: 'dead_end',
@@ -267,7 +267,7 @@ export async function GET(request: NextRequest) {
           evidence: deadEnds.slice(0, 5),
         });
         await db.insert(confusionSignals).values({
-          siteId: siteId!,
+          siteId,
           windowStart: start,
           windowEnd: end,
           type: 'drop_off',
@@ -275,7 +275,7 @@ export async function GET(request: NextRequest) {
           evidence: dropOffs.slice(0, 5),
         });
         await db.insert(confusionSignals).values({
-          siteId: siteId!,
+          siteId,
           windowStart: start,
           windowEnd: end,
           type: 'intent_mismatch',

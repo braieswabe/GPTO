@@ -101,6 +101,7 @@ export async function GET(
       site,
       config,
       telemetry: recentTelemetry,
+      activeVersion: activeConfig?.version || null,
     });
   } catch (error) {
     // #region agent log

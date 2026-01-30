@@ -629,9 +629,39 @@ function DashboardContent() {
     },
   ];
 
-  const handleExport = (format: 'pdf') => {
+  const handleExport = async (format: 'pdf' | 'json', siteId?: string) => {
     if (typeof window === 'undefined') return;
-    window.location.href = `/api/dashboard/export?format=${format}&range=${timeRange}`;
+    
+    try {
+      const token = localStorage.getItem('token') || '';
+      const params = new URLSearchParams({
+        format,
+        range: timeRange,
+        ...(siteId && { siteId }),
+      });
+      
+      const response = await fetch(`/api/dashboard/export?${params}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      
+      if (!response.ok) {
+        throw new Error('Export failed');
+      }
+      
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      const dateStr = new Date().toISOString().slice(0, 10);
+      a.download = `dashboard-report-${dateStr}.${format}`;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+    } catch (error) {
+      console.error('Export error:', error);
+      alert('Failed to export. Please try again.');
+    }
   };
 
   const momentumItems = telemetry?.topPages?.length
@@ -842,15 +872,16 @@ function DashboardContent() {
                         </svg>
                         View Report
                       </Link>
-                      <a
-                        href={`/api/dashboard/export?siteId=${site.id}&range=${timeRange}&format=pdf`}
+                      <button
+                        type="button"
+                        onClick={() => handleExport('pdf', site.id)}
                         className="inline-flex items-center gap-1 rounded-md border border-gray-200 px-2.5 py-1.5 text-xs font-medium text-gray-600 hover:border-gray-300 hover:bg-gray-50 transition-colors"
                       >
                         <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16h10M7 12h10m-7-4h7M5 20h14a1 1 0 001-1V7l-5-4H5a1 1 0 00-1 1v15a1 1 0 001 1z" />
                         </svg>
                         PDF
-                      </a>
+                      </button>
                     </div>
                   </div>
                 ))}

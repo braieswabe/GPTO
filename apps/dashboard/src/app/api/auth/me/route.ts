@@ -1,9 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@gpto/database';
-import { users } from '@gpto/database/src/schema';
+import { securitySessions, users } from '@gpto/database/src/schema';
 import { extractToken, verifyToken } from '@gpto/api';
 import { AuthenticationError } from '@gpto/api/src/errors';
 import { eq } from 'drizzle-orm';
+import jwt from 'jsonwebtoken';
+import { generateFingerprint, CognitiveFingerprint } from '@gpto/security';
 
 /**
  * GET /api/auth/me
@@ -37,6 +39,35 @@ export async function GET(request: NextRequest) {
 
     if (!user) {
       throw new AuthenticationError('User not found');
+    }
+
+    const [existingSession] = await db
+      .select({ id: securitySessions.id })
+      .from(securitySessions)
+      .where(eq(securitySessions.token, token))
+      .limit(1);
+
+    if (!existingSession) {
+      try {
+        const decoded = jwt.decode(token) as { exp?: number } | null;
+        const expiresAt = decoded?.exp
+          ? new Date(decoded.exp * 1000)
+          : new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
+        const userAgent = request.headers.get('user-agent') || undefined;
+        const fingerprintValue: CognitiveFingerprint = generateFingerprint({
+          userId: user.id,
+          deviceInfo: userAgent,
+        });
+
+        await db.insert(securitySessions).values({
+          userId: user.id,
+          fingerprint: JSON.stringify(fingerprintValue),
+          token,
+          expiresAt,
+        });
+      } catch (sessionError) {
+        console.error('Failed to log security session:', sessionError);
+      }
     }
 
     return NextResponse.json({

@@ -1,5 +1,5 @@
 import { db } from '@gpto/database';
-import { approvals, updateHistory, configVersions } from '@gpto/database/src/schema';
+import { approvals, updateHistory, configVersions, rollbackPoints } from '@gpto/database/src/schema';
 import { eq, and } from 'drizzle-orm';
 
 /**
@@ -78,6 +78,32 @@ export async function processApproval(
       // #endregion
 
       if (update) {
+        const [currentConfig] = await db
+          .select()
+          .from(configVersions)
+          .where(and(
+            eq(configVersions.siteId, update.siteId),
+            eq(configVersions.isActive, true)
+          ))
+          .limit(1);
+
+        if (currentConfig) {
+          const existingRollback = await db
+            .select({ id: rollbackPoints.id })
+            .from(rollbackPoints)
+            .where(eq(rollbackPoints.updateId, update.id))
+            .limit(1);
+
+          if (existingRollback.length === 0) {
+            await db.insert(rollbackPoints).values({
+              updateId: update.id,
+              siteId: update.siteId,
+              version: currentConfig.version,
+              configSnapshot: currentConfig.configJson,
+            });
+          }
+        }
+
         // Deactivate current active version
         await db
           .update(configVersions)

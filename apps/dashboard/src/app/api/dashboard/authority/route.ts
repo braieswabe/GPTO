@@ -38,6 +38,7 @@ export async function GET(request: NextRequest) {
 
     const events = await db
       .select({
+        siteId: telemetryEvents.siteId,
         metrics: telemetryEvents.metrics,
       })
       .from(telemetryEvents)
@@ -82,16 +83,25 @@ export async function GET(request: NextRequest) {
     }
 
     const trustSignals: Array<{ label: string; value: number }> = [];
-    for (const audit of auditBySite.values()) {
+    const trustSignalsBySite = new Map<string, Array<{ label: string; value: number }>>();
+    for (const [auditSiteId, audit] of auditBySite.entries()) {
       const siteAudit = (audit as { siteAudit?: Record<string, unknown> }).siteAudit;
       const signals = siteAudit?.signals as Record<string, unknown> | undefined;
       const trustRate = (signals?.answerability as Record<string, unknown> | undefined)?.trustRate as number | undefined;
       const jsonLdRate = signals?.jsonLdRate as number | undefined;
+      const siteSignals: Array<{ label: string; value: number }> = [];
       if (typeof trustRate === 'number') {
-        trustSignals.push({ label: 'Trust content', value: toPercent(trustRate) });
+        const signal = { label: 'Trust content', value: toPercent(trustRate) };
+        trustSignals.push(signal);
+        siteSignals.push(signal);
       }
       if (typeof jsonLdRate === 'number') {
-        trustSignals.push({ label: 'Structured data', value: toPercent(jsonLdRate) });
+        const signal = { label: 'Structured data', value: toPercent(jsonLdRate) };
+        trustSignals.push(signal);
+        siteSignals.push(signal);
+      }
+      if (siteSignals.length > 0) {
+        trustSignalsBySite.set(auditSiteId, siteSignals);
       }
     }
 
@@ -105,36 +115,61 @@ export async function GET(request: NextRequest) {
     const confidence = getConfidence(events.length);
     const authorityScore = Math.round(authorityAvg * 100);
 
-    // Auto-generate authority signals if missing and we have events with metrics
-    // Only generate if we have a single site and enough events with metrics
-    const shouldAutoGenerate = siteId && siteIds.length === 1 && authorityValues.length >= 5;
-    
-    if (shouldAutoGenerate || refresh) {
-      // Check if signals already exist for this window
-      const existingSignals = await db
-        .select({ id: authoritySignals.id })
-        .from(authoritySignals)
-        .where(
-          and(
-            eq(authoritySignals.siteId, siteId),
-            gte(authoritySignals.windowStart, start),
-            lte(authoritySignals.windowEnd, end)
-          )
-        )
-        .limit(1);
+    const eventsBySite = new Map<string, Array<{ metrics: unknown }>>();
+    for (const event of events) {
+      if (!event.siteId) continue;
+      const list = eventsBySite.get(event.siteId) || [];
+      list.push({ metrics: event.metrics });
+      eventsBySite.set(event.siteId, list);
+    }
 
-      // Only generate if signals don't exist or refresh is explicitly requested
-      if (existingSignals.length === 0 || refresh) {
-        await db.insert(authoritySignals).values({
-          siteId,
-          windowStart: start,
-          windowEnd: end,
-          authorityScore,
-          trustSignals: trustSignals.slice(0, 5),
-          blockers: blockers.slice(0, 5),
-          confidence: confidence.score,
-        });
-      }
+    const existingSignals = await db
+      .select({ siteId: authoritySignals.siteId })
+      .from(authoritySignals)
+      .where(
+        and(
+          inArray(authoritySignals.siteId, siteIds),
+          eq(authoritySignals.windowStart, start),
+          eq(authoritySignals.windowEnd, end)
+        )
+      );
+    const existingBySite = new Set(existingSignals.map((row) => row.siteId));
+
+    for (const id of siteIds) {
+      if (!refresh && existingBySite.has(id)) continue;
+      const siteEvents = eventsBySite.get(id) || [];
+      const siteAuthorityValues = extractMetrics(siteEvents, 'ts.authority');
+      const siteAuthoritySignalsValues = extractMetrics(siteEvents, 'ai.authoritySignals');
+      const siteSchemaCompletenessValues = extractMetrics(siteEvents, 'ai.schemaCompleteness');
+      const siteAuthorityAvg = siteAuthorityValues.length
+        ? siteAuthorityValues.reduce((a, b) => a + b, 0) / siteAuthorityValues.length
+        : 0;
+      const siteAuthoritySignalsAvg = siteAuthoritySignalsValues.length
+        ? siteAuthoritySignalsValues.reduce((a, b) => a + b, 0) / siteAuthoritySignalsValues.length
+        : 0;
+      const siteSchemaCompletenessAvg = siteSchemaCompletenessValues.length
+        ? siteSchemaCompletenessValues.reduce((a, b) => a + b, 0) / siteSchemaCompletenessValues.length
+        : 0;
+
+      const siteTrustSignals = trustSignalsBySite.get(id) || [];
+      const siteBlockers: string[] = [];
+      if (siteAuthorityAvg < 0.6) siteBlockers.push('Authority signals are below target range.');
+      if (siteAuthoritySignalsAvg < 0.6) siteBlockers.push('Insufficient corroboration across authoritative sources.');
+      if (siteSchemaCompletenessAvg < 0.6) siteBlockers.push('Schema completeness is limiting trust lift.');
+
+      const siteConfidence = getConfidence(siteEvents.length);
+      const shouldPersist = refresh || siteEvents.length > 0 || siteTrustSignals.length > 0 || auditBySite.has(id);
+      if (!shouldPersist) continue;
+
+      await db.insert(authoritySignals).values({
+        siteId: id,
+        windowStart: start,
+        windowEnd: end,
+        authorityScore: Math.round(siteAuthorityAvg * 100),
+        trustSignals: siteTrustSignals.slice(0, 5),
+        blockers: siteBlockers.slice(0, 5),
+        confidence: siteConfidence.score,
+      });
     }
 
     return NextResponse.json({

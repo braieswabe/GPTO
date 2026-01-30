@@ -5,10 +5,20 @@ import {
   confusionSignals,
   coverageSignals,
   authoritySignals,
+  audits,
 } from '@gpto/database/src/schema';
 import { and, gte, inArray, lte, desc } from 'drizzle-orm';
 import { AuthenticationError } from '@gpto/api/src/errors';
 import { parseDateRange, getSiteIds } from '@/lib/dashboard-helpers';
+
+function coerceNumber(value: unknown) {
+  if (typeof value === 'number' && Number.isFinite(value)) return value;
+  if (typeof value === 'string' && value.trim() !== '') {
+    const parsed = Number(value);
+    if (Number.isFinite(parsed)) return parsed;
+  }
+  return null;
+}
 
 export async function GET(request: NextRequest) {
   try {
@@ -29,6 +39,7 @@ export async function GET(request: NextRequest) {
         eventType: telemetryEvents.eventType,
         page: telemetryEvents.page,
         metrics: telemetryEvents.metrics,
+        context: telemetryEvents.context,
       })
       .from(telemetryEvents)
       .where(
@@ -59,6 +70,16 @@ export async function GET(request: NextRequest) {
 
     const topPage = Array.from(pageCounts.entries()).sort((a, b) => b[1] - a[1])[0];
     const authorityAvg = authorityCount ? authoritySum / authorityCount : 0;
+    let periodicConfusionTotal = 0;
+    telemetry.forEach((event) => {
+      const context = (event.context as Record<string, unknown> | null) || null;
+      if (context?.periodic !== true) return;
+      const confusion = (context.confusion as Record<string, unknown> | null) || null;
+      if (!confusion) return;
+      periodicConfusionTotal += coerceNumber(confusion.repeatedSearches) ?? 0;
+      periodicConfusionTotal += coerceNumber(confusion.deadEnds) ?? 0;
+      periodicConfusionTotal += coerceNumber(confusion.dropOffs) ?? 0;
+    });
 
     const confusion = await db
       .select({ type: confusionSignals.type, score: confusionSignals.score })
@@ -95,10 +116,54 @@ export async function GET(request: NextRequest) {
       )
       .orderBy(desc(authoritySignals.createdAt));
 
+    const latestAudits = await db
+      .select({
+        siteId: audits.siteId,
+        results: audits.results,
+        createdAt: audits.createdAt,
+      })
+      .from(audits)
+      .where(inArray(audits.siteId, siteIds))
+      .orderBy(desc(audits.createdAt));
+
+    const auditBySite = new Map<string, Record<string, unknown>>();
+    for (const audit of latestAudits) {
+      if (!auditBySite.has(audit.siteId)) {
+        auditBySite.set(audit.siteId, (audit.results as Record<string, unknown>) || {});
+      }
+    }
+
+    const auditCoverageGaps: string[] = [];
+    for (const audit of auditBySite.values()) {
+      const siteAudit = (audit as { siteAudit?: Record<string, unknown> }).siteAudit;
+      const signals = siteAudit?.signals as Record<string, unknown> | undefined;
+      const answerability = signals?.answerability as Record<string, unknown> | undefined;
+      if (!answerability) continue;
+      const whatRate = answerability.whatRate as number | undefined;
+      const whoRate = answerability.whoRate as number | undefined;
+      const howRate = answerability.howRate as number | undefined;
+      const trustRate = answerability.trustRate as number | undefined;
+      if (typeof whatRate === 'number' && whatRate < 0.5) auditCoverageGaps.push('what coverage');
+      if (typeof whoRate === 'number' && whoRate < 0.5) auditCoverageGaps.push('who coverage');
+      if (typeof howRate === 'number' && howRate < 0.5) auditCoverageGaps.push('how coverage');
+      if (typeof trustRate === 'number' && trustRate < 0.5) auditCoverageGaps.push('trust proof');
+    }
+
     const hasTelemetry = telemetry.length > 0;
-    const hasConfusion = confusion.length > 0;
-    const hasCoverage = coverage.length > 0;
-    const hasAuthority = authority.length > 0;
+    const confusionTotal = confusion.reduce((sum, item) => sum + (item.score || 0), 0);
+    const hasConfusion = confusionTotal > 0 || periodicConfusionTotal > 0;
+    const hasCoverage = coverage.length > 0 || auditCoverageGaps.length > 0;
+    const hasAuthority = authority.length > 0 || authorityAvg > 0;
+    const coverageMissingStages =
+      coverage.length > 0 && Array.isArray(coverage[0]?.missingStages)
+        ? (coverage[0].missingStages as string[]).filter(Boolean)
+        : [];
+    const coverageStageSummary =
+      coverageMissingStages.length > 0
+        ? coverageMissingStages.join(', ')
+        : auditCoverageGaps.length > 0
+          ? Array.from(new Set(auditCoverageGaps)).join(', ')
+          : 'key stages';
 
     const insights = [
       {
@@ -110,26 +175,34 @@ export async function GET(request: NextRequest) {
       {
         question: "What's broken?",
         answer: hasConfusion
-          ? `Confusion signals detected (${confusion.reduce((sum, item) => sum + (item.score || 0), 0)} total).`
-          : null,
+          ? `Confusion signals detected (${confusionTotal || periodicConfusionTotal} total).`
+          : hasTelemetry
+            ? 'No major confusion signals detected yet.'
+            : null,
       },
       {
         question: 'What should we change?',
         answer: hasCoverage
-          ? `Coverage gaps remain in ${Array.isArray(coverage[0]?.missingStages) ? coverage[0].missingStages.join(', ') : 'key stages'}.`
-          : null,
+          ? `Coverage gaps remain in ${coverageStageSummary}.`
+          : hasTelemetry || auditBySite.size > 0
+            ? 'Coverage signals are still warming up; sync content inventory to surface gaps.'
+            : null,
       },
       {
         question: 'What should we stop?',
         answer: hasConfusion
           ? 'Stop investing in flows with repeated searches and dead ends until fixes land.'
-          : null,
+          : hasTelemetry
+            ? 'No stop signals yet; keep monitoring friction.'
+            : null,
       },
       {
         question: 'What should we double down on or sell?',
         answer: hasAuthority
-          ? `Double down on pages with authority lift (score ${authority[0]?.authorityScore ?? 0}).`
-          : null,
+          ? `Double down on pages with authority lift (score ${authority[0]?.authorityScore ?? Math.round(authorityAvg * 100)}).`
+          : hasTelemetry && topPage
+            ? `Double down on ${topPage[0]} (highest traffic right now).`
+            : null,
       },
     ];
 

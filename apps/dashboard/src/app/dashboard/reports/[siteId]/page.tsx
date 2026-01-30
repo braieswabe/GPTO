@@ -96,6 +96,41 @@ export default function SiteReportPage() {
     refetchInterval: 60000,
   });
 
+  const handleExport = async (format: 'pdf' | 'json') => {
+    if (typeof window === 'undefined') return;
+    
+    try {
+      const token = localStorage.getItem('token') || localStorage.getItem('authToken') || '';
+      const params = new URLSearchParams({
+        format,
+        range: timeRange,
+        siteId,
+      });
+      
+      const response = await fetch(`/api/dashboard/export?${params}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      
+      if (!response.ok) {
+        throw new Error('Export failed');
+      }
+      
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      const dateStr = new Date().toISOString().slice(0, 10);
+      a.download = `dashboard-report-${siteId}-${dateStr}.${format}`;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+    } catch (error) {
+      console.error('Export error:', error);
+      alert('Failed to export. Please try again.');
+    }
+  };
+
   if (isLoading) {
     return (
       <ProtectedRoute>
@@ -143,15 +178,16 @@ export default function SiteReportPage() {
                 <option value="7d">Last 7 days</option>
                 <option value="30d">Last 30 days</option>
               </select>
-              <Link
-                href={`/api/dashboard/export?siteId=${siteId}&range=${timeRange}&format=pdf`}
+              <button
+                type="button"
+                onClick={() => handleExport('pdf')}
                 className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 inline-flex items-center gap-2"
               >
                 <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16h10M7 12h10m-7-4h7M5 20h14a1 1 0 001-1V7l-5-4H5a1 1 0 00-1 1v15a1 1 0 001 1z" />
                 </svg>
                 Export PDF
-              </Link>
+              </button>
             </div>
           </div>
 
