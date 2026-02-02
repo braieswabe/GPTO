@@ -157,9 +157,16 @@ export async function GET(request: NextRequest) {
     }
 
     const sessions = new Map<string, typeof events>();
+    // Process all events - generate temporary sessionId for events without one
+    // This ensures all users' data is included in analysis
     for (const event of events) {
-      const sessionId = event.sessionId ? String(event.sessionId) : undefined;
-      if (!sessionId) continue;
+      let sessionId = event.sessionId ? String(event.sessionId) : undefined;
+      // If no sessionId, generate a temporary one based on timestamp to group orphaned events
+      // This ensures we don't lose data from events that somehow lack sessionId
+      if (!sessionId) {
+        const timestamp = (event.timestamp as Date).getTime();
+        sessionId = `orphan-${timestamp}-${Math.random().toString(36).slice(2, 9)}`;
+      }
       const list = sessions.get(sessionId) || [];
       list.push(event);
       sessions.set(sessionId, list);
