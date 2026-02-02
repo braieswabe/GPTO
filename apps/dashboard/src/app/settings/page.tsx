@@ -2,8 +2,25 @@
 
 import { ExportButton } from '@/components/ExportButton';
 import { ProtectedRoute } from '@/components/ProtectedRoute';
+import { useAuth } from '@/contexts/AuthContext';
 
 function SettingsPageContent() {
+  const { user } = useAuth();
+  
+  // Block client users - they should only access Gold Dashboard
+  if (user?.role === 'client') {
+    return (
+      <div className="p-8 bg-slate-50 min-h-screen">
+        <div className="max-w-7xl mx-auto">
+          <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+            <p className="text-yellow-800">
+              Client users can only access the Gold Dashboard. Please use the Gold Dashboard link in the navigation.
+            </p>
+          </div>
+        </div>
+      </div>
+    );
+  }
   return (
     <div className="bg-white min-h-screen">
       <div className="p-8 max-w-4xl mx-auto">

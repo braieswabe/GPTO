@@ -24,11 +24,31 @@ export function Navigation() {
     { href: '/docs', label: 'Documentation' },
   ];
 
-  const protectedNavItems = [
-    { href: '/dashboard', label: 'Dashboard' },
-    { href: '/sites', label: 'Sites' },
-    { href: '/settings', label: 'Settings' },
-  ];
+  // Role-based navigation - clients only see Gold Dashboard
+  let protectedNavItems: Array<{ href: string; label: string }> = [];
+  if (mounted && isAuthenticated && user) {
+    if (user.role === 'client') {
+      // Clients only see Gold Dashboard
+      protectedNavItems = [
+        { href: '/dashboard/gold', label: 'Gold Dashboard' },
+      ];
+    } else {
+      // Admin, operator, viewer see full navigation
+      protectedNavItems = [
+        { href: '/dashboard', label: 'Dashboard' },
+        { href: '/sites', label: 'Sites' },
+        { href: '/settings', label: 'Settings' },
+      ];
+      
+      // Add admin-only items
+      if (user.role === 'admin') {
+        protectedNavItems.push({ href: '/users', label: 'Users' });
+      }
+    }
+  } else if (!mounted || !isAuthenticated) {
+    // Default for unauthenticated or loading state
+    protectedNavItems = [];
+  }
 
   const navItems = isAuthenticated 
     ? [...publicNavItems, ...protectedNavItems]

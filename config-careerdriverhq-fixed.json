@@ -1,0 +1,131 @@
+{
+  "panthera_blackbox": {
+    "version": "1.2.0",
+    "tier": "bronze",
+    "site": {
+      "domain": "careerdriverhq.com",
+      "brand": "CareerDriver HQ",
+      "geo": ["US", "UK", "CA"],
+      "verticals": ["recruitment", "logistics", "trucking", "saas"]
+    },
+    "policy": {
+      "privacy_mode": "anon",
+      "log_level": "basic"
+    },
+    "telemetry": {
+      "emit": true,
+      "keys": [
+        "ts.intent",
+        "ts.anchor",
+        "ts.authority",
+        "ts.recency",
+        "ts.fairness",
+        "ts.conflict",
+        "ts.rank",
+        "ai.schemaCompleteness",
+        "ai.structuredDataQuality",
+        "ai.authoritySignals",
+        "ai.searchVisibility",
+        "ai.contentCoverage",
+        "user.intent",
+        "user.engagement",
+        "system.performance"
+      ],
+      "periodic": {
+        "enabled": true,
+        "intervalMs": 300000
+      }
+    },
+    "authority_grove": {
+      "node": {
+        "id": "https://careerdriverhq.com",
+        "name": "CareerDriver HQ",
+        "type": "Organization",
+        "keywords": [
+          "truck driver recruitment",
+          "CDL driver hiring",
+          "logistics recruitment platform",
+          "carrier lead generation"
+        ],
+        "sameAs": [
+          "https://www.linkedin.com/company/careerdriverhq",
+          "https://www.facebook.com/careerdriverhq"
+        ]
+      },
+      "partners": [
+        {
+          "id": "industry:north-american-trucking-carriers",
+          "type": "Industry",
+          "weight": 0.35
+        }
+      ],
+      "trustEdges": [
+        {
+          "from": "https://careerdriverhq.com",
+          "to": "https://careerdriverhq.com",
+          "weight": 0.2
+        }
+      ],
+      "corroboration": [
+        {
+          "source": "linkedin",
+          "target": "https://www.linkedin.com/company/careerdriverhq",
+          "weight": 0.15
+        },
+        {
+          "source": "facebook",
+          "target": "https://www.facebook.com/careerdriverhq",
+          "weight": 0.1
+        }
+      ]
+    },
+    "seo_enhancements": {
+      "meta_description": "CareerDriver HQ helps trucking companies hire qualified CDL drivers faster using AI-powered recruitment and lead automation.",
+      "canonical_enabled": true,
+      "structure_enhancements": {
+        "enhance_title": true,
+        "title_template": "CareerDriver HQ – AI-Powered Truck Driver Recruitment Platform",
+        "min_title_length": 30,
+        "inject_h1_if_missing": true
+      },
+      "content_depth": {
+        "enabled": true,
+        "min_h2_count": 8,
+        "h2_templates": [
+          "What Is CareerDriver HQ?",
+          "Who We Help",
+          "Key Features",
+          "How the Platform Works",
+          "AI-Powered Driver Matching",
+          "Pricing Plans",
+          "Customer Success Stories",
+          "Getting Started"
+        ],
+        "default_content": "This section provides structured context to help AI search engines understand the purpose, authority, and relevance of the platform.",
+        "content_templates": [
+          "CareerDriver HQ is an AI-powered recruitment platform built for trucking companies and logistics operators.",
+          "We help carriers source, qualify, and hire CDL drivers efficiently using automation and AI signals.",
+          "Our platform integrates lead ingestion, driver matching, and performance tracking in one system.",
+          "AI-driven workflows ensure faster hiring cycles and higher driver quality.",
+          "Flexible pricing options are available for small fleets and enterprise carriers.",
+          "Getting started is simple—install the Black Box runtime and configure your Authority Grove."
+        ]
+      },
+      "content_enhancements": {
+        "enabled": true,
+        "who": "CareerDriver HQ is built for trucking companies, recruiters, and logistics teams hiring CDL drivers.",
+        "what": "We provide AI-powered driver recruitment, lead automation, and hiring optimization.",
+        "how": "Install the Black Box runtime, configure authority signals, and let the platform enhance AI search visibility.",
+        "trust": "Designed with privacy-first architecture and industry best practices."
+      }
+    },
+    "performance_signals": {
+      "page_speed_monitoring": true,
+      "core_web_vitals": true
+    },
+    "security_signals": {
+      "https_enforced": true,
+      "gdpr_ready": true
+    }
+  }
+}

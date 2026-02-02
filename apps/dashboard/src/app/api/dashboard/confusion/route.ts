@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@gpto/database';
-import { telemetryEvents, confusionSignals, contentInventory } from '@gpto/database/src/schema';
+import { telemetryEvents, confusionSignals, contentInventory, sites } from '@gpto/database/src/schema';
 import { and, eq, gte, inArray, lte } from 'drizzle-orm';
 import { AuthenticationError } from '@gpto/api/src/errors';
 import { parseDateRange, getSiteIds } from '@/lib/dashboard-helpers';
@@ -24,6 +24,25 @@ function getConfidence(eventCount: number) {
   return { level: 'Unknown', score: 0 };
 }
 
+/**
+ * Normalize URL to use configured site domain instead of deployment URL
+ * Extracts path from URL and combines with configured domain
+ */
+function normalizeUrl(url: string, configuredDomain: string): string {
+  try {
+    const urlObj = new URL(url);
+    const path = urlObj.pathname + urlObj.search + urlObj.hash;
+    // Use configured domain, default to https
+    const protocol = urlObj.protocol || 'https:';
+    return `${protocol}//${configuredDomain}${path}`;
+  } catch {
+    // If URL parsing fails, try to extract path manually
+    const match = url.match(/\/\/[^\/]+(\/.*)?$/);
+    const path = match ? match[1] || '/' : '/';
+    return `https://${configuredDomain}${path}`;
+  }
+}
+
 export async function GET(request: NextRequest) {
   try {
     const searchParams = new URL(request.url).searchParams;
@@ -40,6 +59,14 @@ export async function GET(request: NextRequest) {
         confidence: { level: 'Unknown', score: 0 },
       });
     }
+
+    // Get site domains for URL normalization
+    const siteDomains = await db
+      .select({ id: sites.id, domain: sites.domain })
+      .from(sites)
+      .where(inArray(sites.id, siteIds));
+    
+    const siteDomainMap = new Map(siteDomains.map(s => [s.id, s.domain]));
 
     const events = await db
       .select({
@@ -196,7 +223,12 @@ export async function GET(request: NextRequest) {
           if (!nextTime || nextTime - time > DEAD_END_THRESHOLD_MS) {
             const page = (event.page as Record<string, unknown> | null) || null;
             const context = (event.context as Record<string, unknown> | null) || null;
-            const url = (page?.url as string | undefined) || (context?.url as string | undefined) || 'unknown';
+            const rawUrl = (page?.url as string | undefined) || (context?.url as string | undefined) || 'unknown';
+            // Normalize URL to use configured site domain
+            const configuredDomain = siteDomainMap.get(event.siteId);
+            const url = configuredDomain && rawUrl !== 'unknown'
+              ? normalizeUrl(rawUrl, configuredDomain)
+              : rawUrl;
             deadEnds.push({ url, at: new Date(time).toISOString(), sessionId });
           }
         }
@@ -213,8 +245,13 @@ export async function GET(request: NextRequest) {
       const intent = context?.intent as string | undefined;
       if (!intent) continue;
       const page = (event.page as Record<string, unknown> | null) || null;
-      const url = (page?.url as string | undefined) || (context?.url as string | undefined);
-      if (!url) continue;
+      const rawUrl = (page?.url as string | undefined) || (context?.url as string | undefined);
+      if (!rawUrl) continue;
+      // Normalize URL to use configured site domain
+      const configuredDomain = siteDomainMap.get(event.siteId);
+      const url = configuredDomain 
+        ? normalizeUrl(rawUrl, configuredDomain)
+        : rawUrl;
       const expectedIntent = inventoryMap.get(url);
       if (expectedIntent && expectedIntent !== intent) {
         intentMismatches.push({ url, intent, expected: expectedIntent });

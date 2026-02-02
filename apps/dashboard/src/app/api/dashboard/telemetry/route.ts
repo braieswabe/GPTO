@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@gpto/database';
-import { telemetryEvents, dashboardRollupsDaily } from '@gpto/database/src/schema';
+import { telemetryEvents, dashboardRollupsDaily, sites } from '@gpto/database/src/schema';
 import { and, gte, inArray, lte, eq } from 'drizzle-orm';
 import { AuthenticationError } from '@gpto/api/src/errors';
 import { parseDateRange, getSiteIds } from '@/lib/dashboard-helpers';
@@ -44,6 +44,25 @@ function computeTrend(current: number, previous: number) {
     return current > 0 ? 1 : 0;
   }
   return (current - previous) / previous;
+}
+
+/**
+ * Normalize URL to use configured site domain instead of deployment URL
+ * Extracts path from URL and combines with configured domain
+ */
+function normalizeUrl(url: string, configuredDomain: string): string {
+  try {
+    const urlObj = new URL(url);
+    const path = urlObj.pathname + urlObj.search + urlObj.hash;
+    // Use configured domain, default to https
+    const protocol = urlObj.protocol || 'https:';
+    return `${protocol}//${configuredDomain}${path}`;
+  } catch {
+    // If URL parsing fails, try to extract path manually
+    const match = url.match(/\/\/[^\/]+(\/.*)?$/);
+    const path = match ? match[1] || '/' : '/';
+    return `https://${configuredDomain}${path}`;
+  }
 }
 
 async function persistDailyRollups(
@@ -91,8 +110,17 @@ export async function GET(request: NextRequest) {
       });
     }
 
+    // Get site domains for URL normalization
+    const siteDomains = await db
+      .select({ id: sites.id, domain: sites.domain })
+      .from(sites)
+      .where(inArray(sites.id, siteIds));
+    
+    const siteDomainMap = new Map(siteDomains.map(s => [s.id, s.domain]));
+
     const events = await db
       .select({
+        siteId: telemetryEvents.siteId,
         timestamp: telemetryEvents.timestamp,
         eventType: telemetryEvents.eventType,
         sessionId: telemetryEvents.sessionId,
@@ -195,12 +223,18 @@ export async function GET(request: NextRequest) {
       }
 
       const page = (event.page as Record<string, unknown> | null) || null;
-      const url = (page?.url as string | undefined) || (context?.url as string | undefined);
-      if (url) {
+      const rawUrl = (page?.url as string | undefined) || (context?.url as string | undefined);
+      if (rawUrl) {
+        // Normalize URL to use configured site domain instead of deployment URL
+        const configuredDomain = siteDomainMap.get(event.siteId);
+        const normalizedUrl = configuredDomain 
+          ? normalizeUrl(rawUrl, configuredDomain)
+          : rawUrl;
+        
         if (effectiveAggregated?.pageViews) {
-          pageCounts.set(url, (pageCounts.get(url) || 0) + effectiveAggregated.pageViews);
+          pageCounts.set(normalizedUrl, (pageCounts.get(normalizedUrl) || 0) + effectiveAggregated.pageViews);
         } else if (!hasPeriodicByDay.has(dayKey) && eventType === 'page_view') {
-          pageCounts.set(url, (pageCounts.get(url) || 0) + 1);
+          pageCounts.set(normalizedUrl, (pageCounts.get(normalizedUrl) || 0) + 1);
         }
       }
 

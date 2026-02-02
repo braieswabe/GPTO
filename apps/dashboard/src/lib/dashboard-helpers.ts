@@ -1,9 +1,9 @@
 import { NextRequest } from 'next/server';
 import { db } from '@gpto/database';
-import { sites } from '@gpto/database/src/schema';
-import { extractToken, verifyToken } from '@gpto/api';
+import { sites, userSiteAccess, users } from '@gpto/database/src/schema';
+import { extractToken, verifyToken, JWTPayload } from '@gpto/api';
 import { AuthenticationError } from '@gpto/api/src/errors';
-import { eq } from 'drizzle-orm';
+import { eq, or, inArray } from 'drizzle-orm';
 
 export type TimeRangeKey = '7d' | '30d' | 'custom';
 
@@ -55,26 +55,104 @@ export async function requireAuth(request: NextRequest): Promise<void> {
   }
 }
 
-export async function getSiteIds(request: NextRequest, siteId?: string | null) {
-  await requireAuth(request);
-
-  if (siteId) {
-    return [siteId];
+/**
+ * Get accessible site IDs for the authenticated user based on their role
+ */
+async function getUserAccessibleSiteIds(userId: string, role: string, tenantId: string | null | undefined): Promise<string[]> {
+  // Admin and operator can see all sites
+  if (role === 'admin' || role === 'operator') {
+    const allSites = await db.select({ id: sites.id }).from(sites);
+    return allSites.map((site) => site.id);
   }
 
+  // Client users can see sites they're assigned to OR sites matching their tenantId
+  if (role === 'client') {
+    const accessibleSites: string[] = [];
+
+    // Get sites from user_site_access table
+    const assignedSites = await db
+      .select({ siteId: userSiteAccess.siteId })
+      .from(userSiteAccess)
+      .where(eq(userSiteAccess.userId, userId));
+    
+    accessibleSites.push(...assignedSites.map((a) => a.siteId));
+
+    // Get sites matching tenantId if tenantId exists
+    if (tenantId) {
+      const tenantSites = await db
+        .select({ id: sites.id })
+        .from(sites)
+        .where(eq(sites.tenantId, tenantId));
+      
+      accessibleSites.push(...tenantSites.map((s) => s.id));
+    }
+
+    // Remove duplicates
+    return [...new Set(accessibleSites)];
+  }
+
+  // Viewer and other roles see all sites (default behavior)
   const allSites = await db.select({ id: sites.id }).from(sites);
   return allSites.map((site) => site.id);
 }
 
+export async function getSiteIds(request: NextRequest, siteId?: string | null) {
+  const authHeader = request.headers.get('authorization');
+  const token = extractToken(authHeader ?? undefined);
+  
+  if (!token) {
+    throw new AuthenticationError();
+  }
+
+  const payload = verifyToken(token);
+
+  // If specific siteId requested, verify user has access
+  if (siteId) {
+    const accessibleSiteIds = await getUserAccessibleSiteIds(
+      payload.userId,
+      payload.role,
+      payload.tenantId
+    );
+    
+    if (!accessibleSiteIds.includes(siteId)) {
+      throw new AuthenticationError('Access denied to this site');
+    }
+    
+    return [siteId];
+  }
+
+  // Return all accessible sites for the user
+  return getUserAccessibleSiteIds(payload.userId, payload.role, payload.tenantId);
+}
+
 export async function getSites(request: NextRequest, siteId?: string | null) {
-  await requireAuth(request);
+  const authHeader = request.headers.get('authorization');
+  const token = extractToken(authHeader ?? undefined);
+  
+  if (!token) {
+    throw new AuthenticationError();
+  }
+
+  const payload = verifyToken(token);
+  const accessibleSiteIds = await getUserAccessibleSiteIds(
+    payload.userId,
+    payload.role,
+    payload.tenantId
+  );
+
+  if (accessibleSiteIds.length === 0) {
+    return [];
+  }
 
   if (siteId) {
+    if (!accessibleSiteIds.includes(siteId)) {
+      throw new AuthenticationError('Access denied to this site');
+    }
     const [site] = await db.select().from(sites).where(eq(sites.id, siteId)).limit(1);
     return site ? [site] : [];
   }
 
-  return db.select().from(sites);
+  return db.select().from(sites).where(inArray(sites.id, accessibleSiteIds));
 }
 
 /**

@@ -4,6 +4,7 @@ import { sites, configVersions } from '@gpto/database/src/schema';
 import { extractToken, verifyToken } from '@gpto/api';
 import { AuthenticationError, ValidationError } from '@gpto/api/src/errors';
 import { randomUUID } from 'crypto';
+import { getSites } from '@/lib/dashboard-helpers';
 
 /**
  * GET /api/sites
@@ -22,8 +23,8 @@ export async function GET(request: NextRequest) {
 
     verifyToken(token); // Verify token is valid
 
-    // Query sites
-    const sitesList = await db.select().from(sites);
+    // Query sites with role-based filtering
+    const sitesList = await getSites(request);
 
     return NextResponse.json({
       data: sitesList,

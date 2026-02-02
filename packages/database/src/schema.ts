@@ -247,6 +247,15 @@ export const pantheraCanonPlans = pgTable('panthera_canon_plans', {
   updatedAt: timestamp('updated_at').defaultNow().notNull(),
 });
 
+// User-Site Access junction table
+export const userSiteAccess = pgTable('user_site_access', {
+  id: uuid('id').defaultRandom().primaryKey(),
+  userId: uuid('user_id').references(() => users.id).notNull(),
+  siteId: uuid('site_id').references(() => sites.id).notNull(),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+  createdBy: uuid('created_by').references(() => users.id),
+});
+
 // Relations
 export const sitesRelations = relations(sites, ({ many }) => ({
   telemetryEvents: many(telemetryEvents),
@@ -262,6 +271,7 @@ export const sitesRelations = relations(sites, ({ many }) => ({
   competitors: many(competitors),
   reports: many(reports),
   pantheraCanonPlans: many(pantheraCanonPlans),
+  userSiteAccess: many(userSiteAccess),
 }));
 
 export const usersRelations = relations(users, ({ many }) => ({
@@ -270,6 +280,12 @@ export const usersRelations = relations(users, ({ many }) => ({
   approvals: many(approvals),
   auditLogs: many(auditLog),
   sessions: many(securitySessions),
+  siteAccess: many(userSiteAccess, {
+    relationName: 'user_site_access',
+  }),
+  siteAccessCreated: many(userSiteAccess, {
+    relationName: 'created_by_user',
+  }),
 }));
 
 export const configVersionsRelations = relations(configVersions, ({ one }) => ({
@@ -368,5 +384,22 @@ export const pantheraCanonPlansRelations = relations(pantheraCanonPlans, ({ one 
   site: one(sites, {
     fields: [pantheraCanonPlans.siteId],
     references: [sites.id],
+  }),
+}));
+
+export const userSiteAccessRelations = relations(userSiteAccess, ({ one }) => ({
+  user: one(users, {
+    fields: [userSiteAccess.userId],
+    references: [users.id],
+    relationName: 'user_site_access',
+  }),
+  site: one(sites, {
+    fields: [userSiteAccess.siteId],
+    references: [sites.id],
+  }),
+  creator: one(users, {
+    fields: [userSiteAccess.createdBy],
+    references: [users.id],
+    relationName: 'created_by_user',
   }),
 }));

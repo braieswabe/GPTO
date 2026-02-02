@@ -4,6 +4,7 @@ import { sites, configVersions, telemetryEvents } from '@gpto/database/src/schem
 import { eq, and, desc } from 'drizzle-orm';
 import { extractToken, verifyToken, migrateConfig } from '@gpto/api';
 import { AuthenticationError, NotFoundError } from '@gpto/api/src/errors';
+import { getSiteIds } from '@/lib/dashboard-helpers';
 
 /**
  * GET /api/sites/[id]
@@ -42,6 +43,12 @@ export async function GET(
     // #endregion
     
     verifyToken(token);
+
+    // Verify user has access to this site
+    const accessibleSiteIds = await getSiteIds(request, siteId);
+    if (!accessibleSiteIds.includes(siteId)) {
+      throw new AuthenticationError('Access denied to this site');
+    }
 
     // #region agent log
     fetch('http://127.0.0.1:7251/ingest/f2bef142-91a5-4d7a-be78-4c2383eb5638',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'api/sites/[id]/route.ts:30',message:'Querying database for site',data:{siteId},timestamp:Date.now(),sessionId:'debug-session',runId:'run2',hypothesisId:'E'})}).catch(()=>{});

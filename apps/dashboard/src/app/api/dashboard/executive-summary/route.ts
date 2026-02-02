@@ -6,6 +6,7 @@ import {
   coverageSignals,
   authoritySignals,
   audits,
+  sites,
 } from '@gpto/database/src/schema';
 import { and, gte, inArray, lte, desc } from 'drizzle-orm';
 import { AuthenticationError } from '@gpto/api/src/errors';
@@ -18,6 +19,25 @@ function coerceNumber(value: unknown) {
     if (Number.isFinite(parsed)) return parsed;
   }
   return null;
+}
+
+/**
+ * Normalize URL to use configured site domain instead of deployment URL
+ * Extracts path from URL and combines with configured domain
+ */
+function normalizeUrl(url: string, configuredDomain: string): string {
+  try {
+    const urlObj = new URL(url);
+    const path = urlObj.pathname + urlObj.search + urlObj.hash;
+    // Use configured domain, default to https
+    const protocol = urlObj.protocol || 'https:';
+    return `${protocol}//${configuredDomain}${path}`;
+  } catch {
+    // If URL parsing fails, try to extract path manually
+    const match = url.match(/\/\/[^\/]+(\/.*)?$/);
+    const path = match ? match[1] || '/' : '/';
+    return `https://${configuredDomain}${path}`;
+  }
 }
 
 export async function GET(request: NextRequest) {
@@ -34,8 +54,17 @@ export async function GET(request: NextRequest) {
       });
     }
 
+    // Get site domains for URL normalization
+    const siteDomains = await db
+      .select({ id: sites.id, domain: sites.domain })
+      .from(sites)
+      .where(inArray(sites.id, siteIds));
+    
+    const siteDomainMap = new Map(siteDomains.map(s => [s.id, s.domain]));
+
     const telemetry = await db
       .select({
+        siteId: telemetryEvents.siteId,
         eventType: telemetryEvents.eventType,
         page: telemetryEvents.page,
         metrics: telemetryEvents.metrics,
@@ -57,8 +86,15 @@ export async function GET(request: NextRequest) {
     telemetry.forEach((event) => {
       if (event.eventType === 'page_view') {
         const page = event.page as Record<string, unknown> | null;
-        const url = page?.url as string | undefined;
-        if (url) pageCounts.set(url, (pageCounts.get(url) || 0) + 1);
+        const rawUrl = page?.url as string | undefined;
+        if (rawUrl) {
+          // Normalize URL to use configured site domain
+          const configuredDomain = siteDomainMap.get(event.siteId);
+          const url = configuredDomain 
+            ? normalizeUrl(rawUrl, configuredDomain)
+            : rawUrl;
+          pageCounts.set(url, (pageCounts.get(url) || 0) + 1);
+        }
       }
       const metrics = event.metrics as Record<string, number>;
       const authority = metrics?.['ts.authority'];
